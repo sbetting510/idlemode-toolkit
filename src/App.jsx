@@ -9,6 +9,7 @@ import SavesDCs    from './components/tabs/SavesDCs'
 import Spells      from './components/tabs/Spells'
 import Monsters    from './components/tabs/Monsters'
 import EncounterCalc from './components/tabs/EncounterCalc'
+import ClassSheets from './components/tabs/ClassSheets'
 
 const TABS = [
   { id: 'conditions',  label: 'Conditions',     paid: false },
@@ -16,6 +17,7 @@ const TABS = [
   { id: 'combat',      label: 'Combat Rules',    paid: false },
   { id: 'saves',       label: 'Saves & DCs',     paid: false },
   { id: 'spells',      label: 'Spells',          paid: false },
+  { id: 'classes',     label: 'Class Sheets',    paid: false },
   { id: 'monsters',    label: 'Monsters',        paid: false },
   { id: 'encounter',   label: 'Encounter Calc',  paid: true  },
 ]
@@ -289,6 +291,7 @@ export default function App() {
         {currentTab === 'combat'     && <CombatRules searchTerm={searchTerm} />}
         {currentTab === 'saves'      && <SavesDCs    searchTerm={searchTerm} />}
         {currentTab === 'spells'     && <Spells      searchTerm={searchTerm} />}
+        {currentTab === 'classes'    && <ClassSheets searchTerm={searchTerm} />}
         {currentTab === 'monsters'   && (
           <Monsters    
             searchTerm={searchTerm} 
