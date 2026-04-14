@@ -45,13 +45,19 @@ function calcDifficulty(encounter, partySize, partyLevel) {
 }
 
 const selectStyle = {
-  background: 'rgba(255,255,255,0.08)',
-  border: '1px solid var(--border2)',
-  borderRadius: 5, color: 'var(--parch)',
-  fontFamily: 'Georgia, serif', fontSize: 14,
-  padding: '5px 10px', outline: 'none',
-  textAlign: 'center', cursor: 'pointer',
-}
+    background: '#16213e',
+    border: '1px solid var(--border2)',
+    borderRadius: 5,
+    color: '#f5f0e1',
+    fontFamily: 'Georgia, serif',
+    fontSize: 14,
+    padding: '5px 10px',
+    outline: 'none',
+    textAlign: 'center',
+    cursor: 'pointer',
+    appearance: 'none',
+    WebkitAppearance: 'none',
+  }
 
 const panelStyle = {
   background: 'rgba(255,255,255,0.04)',
@@ -96,14 +102,18 @@ export default function EncounterCalc({
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
           <span style={{ fontSize: 13, color: 'var(--parch2)', minWidth: 100 }}>Party size</span>
           <select style={{ ...selectStyle, width: 70 }} value={partySize} onChange={e => onPartySize(parseInt(e.target.value))}>
-            {[2,3,4,5,6,7,8].map(n => <option key={n} value={n}>{n}</option>)}
+            {[2,3,4,5,6,7,8].map(n => (
+            <option key={n} value={n} style={{ background: '#16213e', color: '#f5f0e1' }}>{n}</option>
+            ))}
           </select>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: '1rem' }}>
           <span style={{ fontSize: 13, color: 'var(--parch2)', minWidth: 100 }}>Party level</span>
           <select style={{ ...selectStyle, width: 70 }} value={partyLevel} onChange={e => onPartyLevel(parseInt(e.target.value))}>
-            {Array.from({ length: 20 }, (_, i) => i + 1).map(n => <option key={n} value={n}>{n}</option>)}
-          </select>
+            {Array.from({ length: 20 }, (_, i) => i + 1).map(n => (
+            <option key={n} value={n} style={{ background: '#16213e', color: '#f5f0e1' }}>{n}</option>
+            ))}
+        </select>
         </div>
 
         <div style={panelTitle}>Add monsters</div>
