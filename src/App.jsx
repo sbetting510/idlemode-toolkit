@@ -10,6 +10,7 @@ import Spells      from './components/tabs/Spells'
 import Monsters    from './components/tabs/Monsters'
 import EncounterCalc from './components/tabs/EncounterCalc'
 import ClassSheets from './components/tabs/ClassSheets'
+import CampaignManager from './components/tabs/CampaignManager'
 
 const TABS = [
   { id: 'conditions',  label: 'Conditions',     paid: false },
@@ -20,6 +21,7 @@ const TABS = [
   { id: 'classes',     label: 'Class Sheets',    paid: false },
   { id: 'monsters',    label: 'Monsters',        paid: false },
   { id: 'encounter',   label: 'Encounter Calc',  paid: true  },
+  { id: 'campaign',    label: 'Campaign Manager', paid: true  },
 ]
 
 export default function App() {
@@ -335,6 +337,25 @@ export default function App() {
             onClear={() => setEncounter([])}
           />
         )}
+        {currentTab === 'campaign' && !unlocked && (
+          <div style={{ textAlign:'center', padding:'3rem 1rem' }}>
+            <div style={{ fontSize:32, marginBottom:'1rem' }}>🔒</div>
+            <div style={{ fontSize:18, fontWeight:'bold', color:'var(--gold)', marginBottom:'0.5rem' }}>
+              Campaign Manager
+            </div>
+            <div style={{ fontSize:14, color:'var(--parch2)', marginBottom:'1.5rem', lineHeight:1.6 }}>
+              Track your entire campaign — characters, sessions, encounters, loot, NPCs, and quests.<br />
+              Unlock the full toolkit to access this feature.
+            </div>
+            <button
+              onClick={() => setShowModal(true)}
+              style={{ background:'var(--crimson)', border:'1px solid var(--gold)', borderRadius:6, color:'var(--gold)', fontFamily:'Georgia, serif', fontSize:15, fontWeight:'bold', padding:'10px 28px', cursor:'pointer' }}
+            >
+              Unlock Full Toolkit — $19.99
+            </button>
+          </div>
+        )}
+        {currentTab === 'campaign' && unlocked && <CampaignManager />}
       </main>
       
       {showModal && (
