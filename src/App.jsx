@@ -1,3 +1,5 @@
+import { useLicense }  from './hooks/useLicense'
+import UnlockModal     from './components/ui/UnlockModal'
 import { useState } from 'react'
 import './styles/globals.css'
 import Conditions  from './components/tabs/Conditions'
@@ -25,8 +27,21 @@ export default function App() {
   const [encounter, setEncounter] = useState([])
   const [partySize, setPartySize] = useState(4)
   const [partyLevel, setPartyLevel] = useState(5)
+  const { unlocked, unlock, revoke } = useLicense()
+  const [showModal, setShowModal] = useState(false)
 
   const activeTab = TABS.find(t => t.id === currentTab)
+
+  function goTab(id) {
+    const tab = TABS.find(t => t.id === id)
+    if (tab?.paid && !unlocked) {
+      setShowModal(true)
+      return
+    }
+    setCurrentTab(id)
+    setMenuOpen(false)
+    setSearchTerm('')
+  }
 
   function addToEncounter(name, cr) {
     setEncounter(prev => {
@@ -145,13 +160,16 @@ export default function App() {
             }}
           >
             {tab.label}
-            {tab.paid && (
+            {tab.paid && !unlocked && (
+              <span style={{ marginLeft: 4, fontSize: 11 }}>🔒</span>
+            )}
+            {tab.paid && unlocked && (
               <span style={{
-                background: 'rgba(180,120,0,0.3)', color: '#f5c842',
-                border: '1px solid rgba(180,120,0,0.5)',
+                background: 'rgba(30,100,30,0.3)', color: '#90c870',
+                border: '1px solid rgba(30,100,30,0.5)',
                 borderRadius: 3, fontSize: 9, fontFamily: 'sans-serif',
                 padding: '1px 5px', marginLeft: 4, verticalAlign: 'middle',
-              }}>Paid</span>
+              }}>Unlocked</span>
             )}
           </button>
         ))}
@@ -232,13 +250,16 @@ export default function App() {
                   )}
                   {tab.label}
                 </span>
-                {tab.paid && (
+                {tab.paid && !unlocked && (
+                  <span style={{ marginLeft: 4, fontSize: 11 }}>🔒</span>
+                )}
+                {tab.paid && unlocked && (
                   <span style={{
-                    background: 'rgba(180,120,0,0.3)', color: '#f5c842',
-                    border: '1px solid rgba(180,120,0,0.5)',
+                    background: 'rgba(30,100,30,0.3)', color: '#90c870',
+                    border: '1px solid rgba(30,100,30,0.5)',
                     borderRadius: 3, fontSize: 9, fontFamily: 'sans-serif',
-                    padding: '1px 5px',
-                  }}>Paid</span>
+                    padding: '1px 5px', marginLeft: 4, verticalAlign: 'middle',
+                  }}>Unlocked</span>
                 )}
               </div>
             ))}
@@ -272,7 +293,20 @@ export default function App() {
           />
         )}
       </main>
-
+      
+      {showModal && (
+        <UnlockModal
+          onUnlock={(key) => {
+            const success = unlock(key)
+            if (success) {
+              setShowModal(false)
+              setCurrentTab('encounter')
+            }
+            return success
+          }}
+          onClose={() => setShowModal(false)}
+        />
+      )}
     </div>
   )
 }
