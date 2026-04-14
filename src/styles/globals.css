@@ -1,1 +1,51 @@
- 
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+  
+  :root {
+    --stone:   #1a1a2e;
+    --stone2:  #16213e;
+    --gold:    #c9a84c;
+    --gold2:   #e8c96a;
+    --crimson: #8b0000;
+    --parch:   #f5f0e1;
+    --parch2:  #e8dfc8;
+    --muted:   #888888;
+    --border:  rgba(201, 168, 76, 0.25);
+    --border2: rgba(201, 168, 76, 0.5);
+    --ink:     #2a2a2a;
+  }
+  
+  html, body {
+    background: var(--stone);
+    color: var(--parch);
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 16px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+  
+  #root {
+    min-height: 100vh;
+  }
+  
+  input, select, button, textarea {
+    font-family: Georgia, 'Times New Roman', serif;
+  }
+  
+  mark {
+    background: rgba(201, 168, 76, 0.3);
+    color: inherit;
+    border-radius: 2px;
+  }
+  
+  a {
+    color: var(--gold);
+    text-decoration: none;
+  }
+  
+  a:hover {
+    color: var(--gold2);
+  }
