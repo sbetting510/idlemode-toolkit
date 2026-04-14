@@ -49,7 +49,11 @@ export default function App() {
       if (existing) return prev.map(e => e.name === name ? { ...e, qty: e.qty + 1 } : e)
       return [...prev, { name, cr, qty: 1 }]
     })
-    setCurrentTab('encounter')
+    if (!unlocked) {
+      setShowModal(true)
+    } else {
+      setCurrentTab('encounter')
+    }
   }
 
   function changeQty(name, cr, delta, forceAdd = false) {
@@ -280,15 +284,40 @@ export default function App() {
             onAddToEncounter={addToEncounter} 
           />
         )}
-        {currentTab === 'encounter'  && (
-          <EncounterCalc 
-            encounter={encounter} 
-            partySize={partySize} 
-            partyLevel={partyLevel} 
-            onPartySize={setPartySize} 
-            onPartyLevel={setPartyLevel} 
-            onChangeQty={changeQty} 
-            onRemove={removeMonster} 
+        {currentTab === 'encounter' && !unlocked && (
+          <div style={{ textAlign: 'center', padding: '3rem 1rem' }}>
+            <div style={{ fontSize: 32, marginBottom: '1rem' }}>🔒</div>
+            <div style={{ fontSize: 18, fontWeight: 'bold', color: 'var(--gold)', marginBottom: '0.5rem' }}>
+              Encounter Calculator
+            </div>
+            <div style={{ fontSize: 14, color: 'var(--parch2)', marginBottom: '1.5rem', lineHeight: 1.6 }}>
+              Build and balance encounters for your party.<br />
+              Unlock the full toolkit to access this feature.
+            </div>
+            <button
+              onClick={() => setShowModal(true)}
+              style={{
+                background: 'var(--crimson)',
+                border: '1px solid var(--gold)',
+                borderRadius: 6, color: 'var(--gold)',
+                fontFamily: 'Georgia, serif',
+                fontSize: 15, fontWeight: 'bold',
+                padding: '10px 28px', cursor: 'pointer',
+              }}
+            >
+              Unlock Full Toolkit — $19.99
+            </button>
+          </div>
+        )}
+        {currentTab === 'encounter' && unlocked && (
+          <EncounterCalc
+            encounter={encounter}
+            partySize={partySize}
+            partyLevel={partyLevel}
+            onPartySize={setPartySize}
+            onPartyLevel={setPartyLevel}
+            onChangeQty={changeQty}
+            onRemove={removeMonster}
             onClear={() => setEncounter([])}
           />
         )}
