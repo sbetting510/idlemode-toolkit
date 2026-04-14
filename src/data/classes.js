@@ -1,350 +1,780 @@
-import { useState } from 'react'
-import { CLASSES, SPELL_SLOT_TABLE } from '../../data/classes'
-
-const TYPE_COLORS = {
-  Feature:  { color: 'var(--parch2)', dot: 'var(--gold)'    },
-  Subclass: { color: '#90c870',       dot: '#90c870'         },
-  ASI:      { color: '#f5c842',       dot: '#f5c842'         },
-  Capstone: { color: '#d090f8',       dot: '#d090f8'         },
-}
-
-function profBonus(level) {
-  return level <= 4 ? 2 : level <= 8 ? 3 : level <= 12 ? 4 : level <= 16 ? 5 : 6
-}
-
-function ClassSelector({ classes, selected, onSelect }) {
-  return (
-    <div style={{
-      display: 'flex', flexWrap: 'wrap', gap: 6,
-      marginBottom: '1rem',
-    }}>
-      {classes.map(cls => (
-        <button
-          key={cls.id}
-          onClick={() => onSelect(cls.id)}
-          style={{
-            background: selected === cls.id ? cls.color : 'rgba(255,255,255,0.05)',
-            border: `1px solid ${selected === cls.id ? cls.color : 'var(--border)'}`,
-            borderRadius: 5,
-            color: selected === cls.id ? '#f5f0e1' : 'var(--parch2)',
-            fontFamily: 'Georgia, serif',
-            fontSize: 12,
-            padding: '5px 12px',
-            cursor: 'pointer',
-            transition: 'all 0.15s',
-          }}
-        >
-          {cls.name}
-        </button>
-      ))}
-    </div>
-  )
-}
-
-function SectionHeader({ title }) {
-  return (
-    <div style={{
-      display: 'flex', alignItems: 'center', gap: 8,
-      margin: '1.25rem 0 0.75rem', paddingBottom: 6,
-      borderBottom: '1px solid var(--border)',
-    }}>
-      <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--gold)', flexShrink: 0 }} />
-      <span style={{ fontSize: 13, fontWeight: 'bold', color: 'var(--gold)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-        {title}
-      </span>
-    </div>
-  )
-}
-
-function SpellSlotTable({ type, level }) {
-  if (!type || !SPELL_SLOT_TABLE[type]) return null
-  const slots = SPELL_SLOT_TABLE[type][level - 1]
-  const hasSlots = slots.some(s => s > 0)
-  if (!hasSlots) return (
-    <div style={{ fontSize: 13, color: 'var(--muted)', fontStyle: 'italic' }}>
-      No spell slots at level {level}.
-    </div>
-  )
-  return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-      {slots.map((count, i) => count > 0 && (
-        <div key={i} style={{
-          background: 'rgba(255,255,255,0.05)',
-          border: '1px solid var(--border)',
-          borderRadius: 6, padding: '8px 14px',
-          textAlign: 'center',
-        }}>
-          <div style={{ fontSize: 18, fontWeight: 'bold', color: 'var(--gold)' }}>{count}</div>
-          <div style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'sans-serif' }}>
-            {i === 0 ? '1st' : i === 1 ? '2nd' : i === 2 ? '3rd' : `${i+1}th`} level
-          </div>
-        </div>
-      ))}
-      {type === 'pact' && (
-        <div style={{ fontSize: 12, color: 'var(--muted)', alignSelf: 'center', fontStyle: 'italic' }}>
-          Recharge on short or long rest
-        </div>
-      )}
-    </div>
-  )
-}
-
-export default function ClassSheets({ searchTerm }) {
-  const [selectedClass, setSelectedClass] = useState('barbarian')
-  const [level, setLevel] = useState(1)
-
-  const cls = CLASSES.find(c => c.id === selectedClass)
-  if (!cls) return null
-
-  const prof = profBonus(level)
-  const featuresAtOrBelow = cls.features.filter(f => f.level <= level)
-  const featuresAbove     = cls.features.filter(f => f.level > level)
-  const currentFeatures   = cls.features.filter(f => f.level === level)
-
-  return (
-    <div>
-      {/* Class selector */}
-      <ClassSelector
-        classes={CLASSES}
-        selected={selectedClass}
-        onSelect={(id) => { setSelectedClass(id); setLevel(1) }}
-      />
-
-      {/* Class header */}
-      <div style={{
-        background: cls.color,
-        borderRadius: 8, padding: '1rem 1.25rem',
-        marginBottom: '1rem',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        flexWrap: 'wrap', gap: 12,
-      }}>
-        <div>
-          <div style={{ fontSize: 22, fontWeight: 'bold', color: '#f5f0e1' }}>{cls.name}</div>
-          <div style={{ fontSize: 13, color: 'rgba(245,240,225,0.75)', marginTop: 2 }}>
-            {cls.hitDie} hit die · {cls.primaryAbility} · Saves: {cls.savingThrows.join(', ')}
-          </div>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 11, color: 'rgba(245,240,225,0.6)', fontFamily: 'sans-serif', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Proficiency</div>
-            <div style={{ fontSize: 22, fontWeight: 'bold', color: '#f5f0e1' }}>+{prof}</div>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center' }}>
-            <div style={{ fontSize: 11, color: 'rgba(245,240,225,0.6)', fontFamily: 'sans-serif', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Level</div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <button
-                onClick={() => setLevel(l => Math.max(1, l - 1))}
-                style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(245,240,225,0.3)', borderRadius: 4, color: '#f5f0e1', width: 28, height: 28, cursor: 'pointer', fontSize: 16 }}
-              >−</button>
-              <span style={{ fontSize: 22, fontWeight: 'bold', color: '#f5f0e1', minWidth: 32, textAlign: 'center' }}>{level}</span>
-              <button
-                onClick={() => setLevel(l => Math.min(20, l + 1))}
-                style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(245,240,225,0.3)', borderRadius: 4, color: '#f5f0e1', width: 28, height: 28, cursor: 'pointer', fontSize: 16 }}
-              >+</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Level selector bar */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: '1rem' }}>
-        {Array.from({ length: 20 }, (_, i) => i + 1).map(l => (
-          <button
-            key={l}
-            onClick={() => setLevel(l)}
-            style={{
-              width: 34, height: 30,
-              background: l === level
-                ? cls.color
-                : l < level
-                  ? 'rgba(255,255,255,0.08)'
-                  : 'transparent',
-              border: `1px solid ${l === level ? cls.color : l < level ? 'var(--border)' : 'rgba(255,255,255,0.1)'}`,
-              borderRadius: 4,
-              color: l === level ? '#f5f0e1' : l < level ? 'var(--parch2)' : 'rgba(255,255,255,0.3)',
-              fontSize: 12, fontFamily: 'sans-serif',
-              cursor: 'pointer',
-            }}
-          >{l}</button>
-        ))}
-      </div>
-
-      {/* Two column layout */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-
-        {/* Left column */}
-        <div>
-          {/* Ability priorities */}
-          <SectionHeader title="Ability score priorities" />
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {cls.abilityPriorities.map(a => (
-              <div key={a.priority} style={{
-                display: 'flex', alignItems: 'flex-start', gap: 10,
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid var(--border)',
-                borderRadius: 5, padding: '8px 10px',
-              }}>
-                <div style={{
-                  width: 22, height: 22, borderRadius: '50%',
-                  background: cls.color, color: '#f5f0e1',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 11, fontWeight: 'bold', fontFamily: 'sans-serif',
-                  flexShrink: 0,
-                }}>{a.priority}</div>
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 'bold', color: 'var(--gold2)' }}>{a.ability}</div>
-                  <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>{a.reason}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Key resources */}
-          <SectionHeader title={`Key resources at level ${level}`} />
-          <div style={{ border: '1px solid var(--border)', borderRadius: 6, overflow: 'hidden' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-              <thead>
-                <tr style={{ background: cls.color }}>
-                  {['Resource', 'Amount', 'Recharge'].map(h => (
-                    <th key={h} style={{ padding: '7px 10px', textAlign: 'left', color: '#f5f0e1', fontSize: 11, fontWeight: 'bold', letterSpacing: '0.04em', textTransform: 'uppercase' }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {cls.resources.map((r, i) => (
-                  <tr key={r.name} style={{ borderBottom: '1px solid rgba(201,168,76,0.1)', background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.03)' }}>
-                    <td style={{ padding: '8px 10px', fontWeight: 'bold', color: 'var(--gold2)' }}>{r.name}</td>
-                    <td style={{ padding: '8px 10px', color: 'var(--parch2)', fontFamily: 'sans-serif' }}>
-                      {typeof r.formula === 'function' ? String(r.formula(level)) : r.formula}
-                    </td>
-                    <td style={{ padding: '8px 10px', color: 'var(--muted)', fontSize: 12 }}>
-                      {typeof r.recharge === 'function' ? r.recharge(level) : r.recharge}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Action economy */}
-          <SectionHeader title="Action economy" />
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {cls.actionEconomy.map(a => (
-              <div key={a.action} style={{
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid var(--border)',
-                borderRadius: 5, padding: '8px 10px',
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                  <span style={{ fontSize: 13, fontWeight: 'bold', color: 'var(--gold2)' }}>{a.action}</span>
-                  <span style={{
-                    fontSize: 10, fontFamily: 'sans-serif', fontWeight: 'bold',
-                    padding: '1px 6px', borderRadius: 3,
-                    background: 'rgba(139,0,0,0.4)', color: '#ff9999',
-                    border: '1px solid rgba(139,0,0,0.6)',
-                  }}>{a.type}</span>
-                </div>
-                <div style={{ fontSize: 12, color: 'var(--muted)' }}>{a.notes}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Right column */}
-        <div>
-          {/* Features at current level */}
-          {currentFeatures.length > 0 && (
-            <>
-              <SectionHeader title={`New at level ${level}`} />
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: '0.5rem' }}>
-                {currentFeatures.map(f => {
-                  const tc = TYPE_COLORS[f.type] || TYPE_COLORS.Feature
-                  return (
-                    <div key={f.name} style={{
-                      background: 'rgba(201,168,76,0.08)',
-                      border: `1px solid ${tc.dot}`,
-                      borderRadius: 5, padding: '8px 10px',
-                      borderLeft: `3px solid ${tc.dot}`,
-                    }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                        <span style={{ fontSize: 13, fontWeight: 'bold', color: tc.dot }}>{f.name}</span>
-                        <span style={{ fontSize: 10, color: tc.dot, fontFamily: 'sans-serif', opacity: 0.7 }}>{f.type}</span>
-                      </div>
-                      <div style={{ fontSize: 12, color: 'var(--parch2)', lineHeight: 1.5 }}>{f.desc}</div>
-                    </div>
-                  )
-                })}
-              </div>
-            </>
-          )}
-
-          {/* All features list */}
-          <SectionHeader title="Class features by level" />
-          <div style={{ border: '1px solid var(--border)', borderRadius: 6, overflow: 'hidden', maxHeight: 400, overflowY: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
-              <thead style={{ position: 'sticky', top: 0 }}>
-                <tr style={{ background: cls.color }}>
-                  {['Lvl', 'Feature', 'Type'].map(h => (
-                    <th key={h} style={{ padding: '7px 8px', textAlign: 'left', color: '#f5f0e1', fontSize: 10, fontWeight: 'bold', letterSpacing: '0.04em', textTransform: 'uppercase' }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {cls.features.map((f, i) => {
-                  const tc = TYPE_COLORS[f.type] || TYPE_COLORS.Feature
-                  const isCurrent = f.level === level
-                  const isPast    = f.level < level
-                  return (
-                    <tr key={`${f.level}-${f.name}`} style={{
-                      borderBottom: '1px solid rgba(201,168,76,0.08)',
-                      background: isCurrent
-                        ? 'rgba(201,168,76,0.1)'
-                        : isPast
-                          ? 'transparent'
-                          : 'transparent',
-                      opacity: f.level > level ? 0.35 : 1,
-                    }}>
-                      <td style={{ padding: '6px 8px', fontWeight: 'bold', color: isCurrent ? cls.color : isPast ? 'var(--muted)' : 'var(--muted)', fontFamily: 'sans-serif', width: 32 }}>
-                        {f.level}
-                      </td>
-                      <td style={{ padding: '6px 8px', color: isCurrent ? 'var(--gold2)' : isPast ? 'var(--parch2)' : 'var(--parch2)' }}>
-                        {f.name}
-                      </td>
-                      <td style={{ padding: '6px 8px' }}>
-                        <span style={{ fontSize: 10, color: tc.dot, fontFamily: 'sans-serif' }}>{f.type}</span>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Spell slots */}
-          {cls.spellSlots && (
-            <>
-              <SectionHeader title={`Spell slots at level ${level}`} />
-              <SpellSlotTable type={cls.spellSlots} level={level} />
-            </>
-          )}
-
-          {/* Subclasses */}
-          <SectionHeader title={`${cls.subclassName} options (choose at level ${cls.subclassLevel})`} />
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {cls.subclasses.map(s => (
-              <div key={s.name} style={{
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid var(--border)',
-                borderRadius: 5, padding: '8px 10px',
-                borderLeft: `3px solid ${cls.color}`,
-              }}>
-                <div style={{ fontSize: 13, fontWeight: 'bold', color: 'var(--gold2)', marginBottom: 3 }}>{s.name}</div>
-                <div style={{ fontSize: 12, color: 'var(--muted)' }}>{s.desc}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
+export const CLASSES = [
+    {
+      id: 'barbarian',
+      name: 'Barbarian',
+      color: '#8B0000',
+      hitDie: 'd12',
+      primaryAbility: 'Strength',
+      savingThrows: ['Strength', 'Constitution'],
+      abilityPriorities: [
+        { priority: 1, ability: 'Strength',     reason: 'Primary attack stat and Rage damage bonus' },
+        { priority: 2, ability: 'Constitution', reason: 'HP pool and Unarmored Defense (AC = 10 + Dex + Con)' },
+        { priority: 3, ability: 'Dexterity',    reason: 'AC contribution and initiative' },
+        { priority: 4, ability: 'Wisdom',       reason: 'Perception and mental saves' },
+        { priority: 5, ability: 'Charisma',     reason: 'Social interactions' },
+      ],
+      resources: [
+        { name: 'Rage uses',        formula: (lvl) => lvl >= 20 ? 'Unlimited' : lvl >= 17 ? 6 : lvl >= 12 ? 5 : lvl >= 6 ? 4 : lvl >= 3 ? 3 : 2, recharge: 'Long rest' },
+        { name: 'Rage damage bonus',formula: (lvl) => lvl >= 16 ? '+4' : lvl >= 9 ? '+3' : '+2',                                                     recharge: 'Passive'   },
+        { name: 'Unarmored AC',     formula: (lvl) => '10 + Dex mod + Con mod',                                                                      recharge: 'Passive'   },
+      ],
+      actionEconomy: [
+        { action: 'Rage',             type: 'Bonus action', notes: 'Lasts 1 minute; ends if you don\'t attack or take damage each turn' },
+        { action: 'Reckless Attack',  type: 'Free (on attack)', notes: 'Advantage on Str attacks this turn; attacks against you have advantage until your next turn' },
+        { action: 'Danger Sense',     type: 'Passive',      notes: 'Advantage on Dex saves vs visible threats (level 2)' },
+      ],
+      subclassLevel: 3,
+      subclassName: 'Primal Path',
+      subclasses: [
+        { name: 'Path of the Berserker',    desc: 'Extra attacks, frenzy, and immunity to charm and fear' },
+        { name: 'Path of the Totem Warrior',desc: 'Spirit animal powers — Bear (resistance), Eagle (mobility), Wolf (pack support)' },
+      ],
+      features: [
+        { level: 1,  name: 'Rage',                    type: 'Feature',  desc: 'Enter a rage as a bonus action. Advantage on Str checks/saves, bonus damage, resistance to B/P/S damage.' },
+        { level: 1,  name: 'Unarmored Defense',        type: 'Feature',  desc: 'AC = 10 + Dex modifier + Con modifier when not wearing armor.' },
+        { level: 2,  name: 'Reckless Attack',          type: 'Feature',  desc: 'Gain advantage on Str attack rolls; attacks against you also have advantage until your next turn.' },
+        { level: 2,  name: 'Danger Sense',             type: 'Feature',  desc: 'Advantage on Dex saves against effects you can see.' },
+        { level: 3,  name: 'Primal Path',              type: 'Subclass', desc: 'Choose your Primal Path subclass.' },
+        { level: 3,  name: 'Subclass feature',         type: 'Subclass', desc: 'Gain your subclass\'s level 3 feature.' },
+        { level: 4,  name: 'ASI',                      type: 'ASI',      desc: '+2 to one ability score or +1 to two, or a feat.' },
+        { level: 5,  name: 'Extra Attack',             type: 'Feature',  desc: 'Attack twice when you take the Attack action.' },
+        { level: 5,  name: 'Fast Movement',            type: 'Feature',  desc: '+10 ft movement speed when not wearing heavy armor.' },
+        { level: 6,  name: 'Subclass feature',         type: 'Subclass', desc: 'Gain your subclass\'s level 6 feature.' },
+        { level: 7,  name: 'Feral Instinct',           type: 'Feature',  desc: 'Advantage on initiative rolls. Act normally on surprise rounds if you enter rage.' },
+        { level: 8,  name: 'ASI',                      type: 'ASI',      desc: '+2 to one ability score or +1 to two, or a feat.' },
+        { level: 9,  name: 'Brutal Critical',          type: 'Feature',  desc: 'Roll one extra damage die on a critical hit.' },
+        { level: 10, name: 'Subclass feature',         type: 'Subclass', desc: 'Gain your subclass\'s level 10 feature.' },
+        { level: 11, name: 'Relentless Rage',          type: 'Feature',  desc: 'When reduced to 0 HP while raging, make a DC 10 Con save to drop to 1 HP instead.' },
+        { level: 12, name: 'ASI',                      type: 'ASI',      desc: '+2 to one ability score or +1 to two, or a feat.' },
+        { level: 13, name: 'Brutal Critical (2 dice)', type: 'Feature',  desc: 'Roll two extra damage dice on a critical hit.' },
+        { level: 14, name: 'Subclass feature',         type: 'Subclass', desc: 'Gain your subclass\'s level 14 feature.' },
+        { level: 15, name: 'Persistent Rage',          type: 'Feature',  desc: 'Rage only ends early if you fall unconscious or choose to end it.' },
+        { level: 16, name: 'ASI',                      type: 'ASI',      desc: '+2 to one ability score or +1 to two, or a feat.' },
+        { level: 17, name: 'Brutal Critical (3 dice)', type: 'Feature',  desc: 'Roll three extra damage dice on a critical hit.' },
+        { level: 18, name: 'Indomitable Might',        type: 'Feature',  desc: 'Use your Strength score instead of the roll for Strength checks if the score is higher.' },
+        { level: 19, name: 'ASI',                      type: 'ASI',      desc: '+2 to one ability score or +1 to two, or a feat.' },
+        { level: 20, name: 'Primal Champion',          type: 'Capstone', desc: '+4 Strength, +4 Constitution.' },
+      ],
+      spellSlots: null,
+    },
+    {
+      id: 'bard',
+      name: 'Bard',
+      color: '#4A2D6A',
+      hitDie: 'd8',
+      primaryAbility: 'Charisma',
+      savingThrows: ['Dexterity', 'Charisma'],
+      abilityPriorities: [
+        { priority: 1, ability: 'Charisma',     reason: 'Spellcasting modifier and Bardic Inspiration' },
+        { priority: 2, ability: 'Dexterity',    reason: 'AC and initiative' },
+        { priority: 3, ability: 'Constitution', reason: 'Concentration and HP' },
+        { priority: 4, ability: 'Intelligence', reason: 'Knowledge skills' },
+        { priority: 5, ability: 'Wisdom',       reason: 'Perception and mental saves' },
+      ],
+      resources: [
+        { name: 'Bardic Inspiration', formula: (lvl) => `${Math.max(1, lvl >= 20 ? 'Cha mod (min 1, recharge on short rest)' : 'Cha mod')} uses`, recharge: lvl => lvl >= 5 ? 'Short or long rest' : 'Long rest' },
+        { name: 'Inspiration die',    formula: (lvl) => lvl >= 15 ? 'd12' : lvl >= 10 ? 'd10' : lvl >= 5 ? 'd8' : 'd6',                            recharge: 'Passive' },
+        { name: 'Spell slots',        formula: (lvl) => 'Full caster — see slot table',                                                              recharge: 'Long rest' },
+      ],
+      actionEconomy: [
+        { action: 'Bardic Inspiration', type: 'Bonus action', notes: 'Give a creature a die to add to one roll within 10 minutes' },
+        { action: 'Countercharm',       type: 'Action',       notes: 'Allies within 30 ft have advantage vs charm/frighten (level 6)' },
+        { action: 'Cutting Words',      type: 'Reaction',     notes: 'Subtract Bardic die from a creature\'s roll (College of Lore, level 3)' },
+      ],
+      subclassLevel: 3,
+      subclassName: 'Bard College',
+      subclasses: [
+        { name: 'College of Lore',  desc: 'Expanded spells, Cutting Words reaction, Magical Secrets earlier' },
+        { name: 'College of Valor', desc: 'Martial weapons, armor proficiency, combat inspiration' },
+      ],
+      features: [
+        { level: 1,  name: 'Spellcasting',            type: 'Feature',  desc: 'Full caster using Charisma. Know spells from Bard list.' },
+        { level: 1,  name: 'Bardic Inspiration (d6)', type: 'Feature',  desc: 'Give a creature a d6 to add to one ability check, attack, or save within 10 minutes.' },
+        { level: 2,  name: 'Jack of All Trades',      type: 'Feature',  desc: 'Add half proficiency (rounded down) to ability checks you aren\'t proficient in.' },
+        { level: 2,  name: 'Song of Rest (d6)',        type: 'Feature',  desc: 'Allies regain extra 1d6 HP when spending Hit Dice during short rests.' },
+        { level: 3,  name: 'Bard College',             type: 'Subclass', desc: 'Choose your Bard College subclass.' },
+        { level: 3,  name: 'Expertise',               type: 'Feature',  desc: 'Double proficiency bonus on two skills of your choice.' },
+        { level: 4,  name: 'ASI',                      type: 'ASI',      desc: '+2 to one ability score or +1 to two, or a feat.' },
+        { level: 5,  name: 'Bardic Inspiration (d8)', type: 'Feature',  desc: 'Inspiration die increases to d8.' },
+        { level: 5,  name: 'Font of Inspiration',     type: 'Feature',  desc: 'Bardic Inspiration recharges on short or long rest.' },
+        { level: 6,  name: 'Countercharm',            type: 'Feature',  desc: 'Use action to give allies within 30 ft advantage on saves vs charm and frighten.' },
+        { level: 6,  name: 'Subclass feature',        type: 'Subclass', desc: 'Gain your subclass\'s level 6 feature.' },
+        { level: 8,  name: 'ASI',                      type: 'ASI',      desc: '+2 to one ability score or +1 to two, or a feat.' },
+        { level: 9,  name: 'Song of Rest (d8)',        type: 'Feature',  desc: 'Song of Rest die increases to d8.' },
+        { level: 10, name: 'Bardic Inspiration (d10)',type: 'Feature',  desc: 'Inspiration die increases to d10.' },
+        { level: 10, name: 'Expertise',               type: 'Feature',  desc: 'Double proficiency on two more skills.' },
+        { level: 10, name: 'Magical Secrets',         type: 'Feature',  desc: 'Learn 2 spells from any class spell list.' },
+        { level: 12, name: 'ASI',                      type: 'ASI',      desc: '+2 to one ability score or +1 to two, or a feat.' },
+        { level: 13, name: 'Song of Rest (d10)',       type: 'Feature',  desc: 'Song of Rest die increases to d10.' },
+        { level: 14, name: 'Magical Secrets',         type: 'Feature',  desc: 'Learn 2 more spells from any class spell list.' },
+        { level: 14, name: 'Subclass feature',        type: 'Subclass', desc: 'Gain your subclass\'s level 14 feature.' },
+        { level: 15, name: 'Bardic Inspiration (d12)',type: 'Feature',  desc: 'Inspiration die increases to d12.' },
+        { level: 15, name: 'Song of Rest (d12)',       type: 'Feature',  desc: 'Song of Rest die increases to d12.' },
+        { level: 16, name: 'ASI',                      type: 'ASI',      desc: '+2 to one ability score or +1 to two, or a feat.' },
+        { level: 18, name: 'Magical Secrets',         type: 'Feature',  desc: 'Learn 2 more spells from any class spell list.' },
+        { level: 19, name: 'ASI',                      type: 'ASI',      desc: '+2 to one ability score or +1 to two, or a feat.' },
+        { level: 20, name: 'Superior Inspiration',    type: 'Capstone', desc: 'Regain 1 Bardic Inspiration on initiative roll if you have none remaining.' },
+      ],
+      spellSlots: 'full',
+    },
+    {
+      id: 'cleric',
+      name: 'Cleric',
+      color: '#8B0000',
+      hitDie: 'd8',
+      primaryAbility: 'Wisdom',
+      savingThrows: ['Wisdom', 'Charisma'],
+      abilityPriorities: [
+        { priority: 1, ability: 'Wisdom',       reason: 'Spellcasting modifier' },
+        { priority: 2, ability: 'Constitution', reason: 'Concentration and HP' },
+        { priority: 3, ability: 'Strength',     reason: 'Melee attacks (if combat cleric)' },
+        { priority: 4, ability: 'Dexterity',    reason: 'AC if light armor build' },
+        { priority: 5, ability: 'Charisma',     reason: 'Social interactions' },
+      ],
+      resources: [
+        { name: 'Channel Divinity', formula: (lvl) => lvl >= 18 ? 3 : lvl >= 6 ? 2 : 1, recharge: 'Short or long rest' },
+        { name: 'Spell slots',      formula: (lvl) => 'Full caster — see slot table',     recharge: 'Long rest' },
+        { name: 'Prepared spells',  formula: (lvl) => 'Wis mod + cleric level',           recharge: 'Passive' },
+      ],
+      actionEconomy: [
+        { action: 'Channel Divinity',  type: 'Action',   notes: 'Turn Undead or domain-specific effect' },
+        { action: 'Turn Undead',       type: 'Action',   notes: 'Undead within 30 ft must flee on failed Wis save' },
+        { action: 'Destroy Undead',    type: 'Replaces Turn', notes: 'Instantly destroy undead of certain CR at higher levels' },
+        { action: 'Divine Intervention', type: 'Action', notes: 'Call on your deity for aid (level 10); auto-succeeds at level 20' },
+      ],
+      subclassLevel: 1,
+      subclassName: 'Divine Domain',
+      subclasses: [
+        { name: 'Life Domain',    desc: 'Healing focus; heavy armor, enhanced healing spells' },
+        { name: 'Light Domain',   desc: 'Radiant/fire damage; Warding Flare reaction' },
+        { name: 'Nature Domain',  desc: 'Nature and animal magic; heavy armor' },
+        { name: 'Tempest Domain', desc: 'Storm and lightning; heavy armor, thunderous rebuke' },
+        { name: 'Trickery Domain',desc: 'Deception and illusion; Invoke Duplicity' },
+        { name: 'War Domain',     desc: 'Martial combat; extra attack on War Priest feature' },
+      ],
+      features: [
+        { level: 1,  name: 'Spellcasting',         type: 'Feature',  desc: 'Full caster using Wisdom. Prepare Wis mod + level spells daily.' },
+        { level: 1,  name: 'Divine Domain',         type: 'Subclass', desc: 'Choose your Divine Domain subclass. Gain domain spells (always prepared).' },
+        { level: 2,  name: 'Channel Divinity (1)',  type: 'Feature',  desc: 'Use Channel Divinity once per short/long rest. Turn Undead or domain option.' },
+        { level: 4,  name: 'ASI',                   type: 'ASI',      desc: '+2 to one ability score or +1 to two, or a feat.' },
+        { level: 5,  name: 'Destroy Undead (CR 1/2)',type:'Feature',  desc: 'Undead of CR 1/2 or lower are destroyed by Turn Undead.' },
+        { level: 6,  name: 'Channel Divinity (2)',  type: 'Feature',  desc: 'Use Channel Divinity twice per short/long rest.' },
+        { level: 6,  name: 'Subclass feature',      type: 'Subclass', desc: 'Gain your subclass\'s level 6 feature.' },
+        { level: 8,  name: 'ASI',                   type: 'ASI',      desc: '+2 to one ability score or +1 to two, or a feat.' },
+        { level: 8,  name: 'Destroy Undead (CR 1)', type: 'Feature',  desc: 'Undead of CR 1 or lower are destroyed by Turn Undead.' },
+        { level: 8,  name: 'Subclass feature',      type: 'Subclass', desc: 'Gain your subclass\'s level 8 feature.' },
+        { level: 10, name: 'Divine Intervention',   type: 'Feature',  desc: 'Implore your deity\'s aid. Roll d100; succeeds on a roll ≤ your cleric level.' },
+        { level: 11, name: 'Destroy Undead (CR 2)', type: 'Feature',  desc: 'Undead of CR 2 or lower are destroyed by Turn Undead.' },
+        { level: 12, name: 'ASI',                   type: 'ASI',      desc: '+2 to one ability score or +1 to two, or a feat.' },
+        { level: 14, name: 'Destroy Undead (CR 3)', type: 'Feature',  desc: 'Undead of CR 3 or lower are destroyed by Turn Undead.' },
+        { level: 16, name: 'ASI',                   type: 'ASI',      desc: '+2 to one ability score or +1 to two, or a feat.' },
+        { level: 17, name: 'Destroy Undead (CR 4)', type: 'Feature',  desc: 'Undead of CR 4 or lower are destroyed by Turn Undead.' },
+        { level: 17, name: 'Subclass feature',      type: 'Subclass', desc: 'Gain your subclass\'s level 17 feature.' },
+        { level: 18, name: 'Channel Divinity (3)',  type: 'Feature',  desc: 'Use Channel Divinity three times per short/long rest.' },
+        { level: 19, name: 'ASI',                   type: 'ASI',      desc: '+2 to one ability score or +1 to two, or a feat.' },
+        { level: 20, name: 'Divine Intervention improved', type: 'Capstone', desc: 'Divine Intervention automatically succeeds.' },
+      ],
+      spellSlots: 'full',
+    },
+    {
+      id: 'druid',
+      name: 'Druid',
+      color: '#2E7D32',
+      hitDie: 'd8',
+      primaryAbility: 'Wisdom',
+      savingThrows: ['Intelligence', 'Wisdom'],
+      abilityPriorities: [
+        { priority: 1, ability: 'Wisdom',       reason: 'Spellcasting modifier' },
+        { priority: 2, ability: 'Constitution', reason: 'Concentration and HP' },
+        { priority: 3, ability: 'Dexterity',    reason: 'AC and initiative' },
+        { priority: 4, ability: 'Intelligence', reason: 'Nature and Arcana skills' },
+        { priority: 5, ability: 'Strength',     reason: 'Wild Shape melee attacks' },
+      ],
+      resources: [
+        { name: 'Wild Shape uses', formula: (lvl) => 2,                               recharge: 'Short or long rest' },
+        { name: 'Wild Shape CR',   formula: (lvl) => lvl >= 8 ? 'CR 1' : lvl >= 4 ? 'CR 1/2 (no fly)' : 'CR 1/4 (no swim/fly)', recharge: 'Passive' },
+        { name: 'Spell slots',     formula: (lvl) => 'Full caster — see slot table',  recharge: 'Long rest' },
+      ],
+      actionEconomy: [
+        { action: 'Wild Shape',  type: 'Bonus action', notes: 'Transform into a beast you\'ve seen (level 2+)' },
+        { action: 'Beast Spells',type: 'Passive',      notes: 'Cast spells while Wild Shaped (level 18)' },
+      ],
+      subclassLevel: 2,
+      subclassName: 'Druid Circle',
+      subclasses: [
+        { name: 'Circle of the Land', desc: 'Bonus spells by terrain type; Natural Recovery for spell slots on short rest' },
+        { name: 'Circle of the Moon', desc: 'Enhanced Wild Shape with higher CR beasts; elemental forms at level 10' },
+      ],
+      features: [
+        { level: 1,  name: 'Druidic',              type: 'Feature',  desc: 'Know the secret Druidic language.' },
+        { level: 1,  name: 'Spellcasting',         type: 'Feature',  desc: 'Full caster using Wisdom. Prepare Wis mod + level spells daily.' },
+        { level: 2,  name: 'Wild Shape',           type: 'Feature',  desc: 'Transform into a beast you\'ve seen as a bonus action (2 uses, recharge on short/long rest).' },
+        { level: 2,  name: 'Druid Circle',         type: 'Subclass', desc: 'Choose your Druid Circle subclass.' },
+        { level: 4,  name: 'Wild Shape improves',  type: 'Feature',  desc: 'Can now Wild Shape into beasts with swim speed (CR 1/2 max, no fly speed).' },
+        { level: 4,  name: 'ASI',                  type: 'ASI',      desc: '+2 to one ability score or +1 to two, or a feat.' },
+        { level: 6,  name: 'Subclass feature',     type: 'Subclass', desc: 'Gain your subclass\'s level 6 feature.' },
+        { level: 8,  name: 'Wild Shape improves',  type: 'Feature',  desc: 'Can now Wild Shape into beasts with fly speed (CR 1 max).' },
+        { level: 8,  name: 'ASI',                  type: 'ASI',      desc: '+2 to one ability score or +1 to two, or a feat.' },
+        { level: 10, name: 'Subclass feature',     type: 'Subclass', desc: 'Gain your subclass\'s level 10 feature.' },
+        { level: 12, name: 'ASI',                  type: 'ASI',      desc: '+2 to one ability score or +1 to two, or a feat.' },
+        { level: 14, name: 'Subclass feature',     type: 'Subclass', desc: 'Gain your subclass\'s level 14 feature.' },
+        { level: 16, name: 'ASI',                  type: 'ASI',      desc: '+2 to one ability score or +1 to two, or a feat.' },
+        { level: 18, name: 'Timeless Body',        type: 'Feature',  desc: 'Age 10x slower and can\'t be aged magically.' },
+        { level: 18, name: 'Beast Spells',         type: 'Feature',  desc: 'Cast spells while in Wild Shape form.' },
+        { level: 19, name: 'ASI',                  type: 'ASI',      desc: '+2 to one ability score or +1 to two, or a feat.' },
+        { level: 20, name: 'Archdruid',            type: 'Capstone', desc: 'Unlimited Wild Shape uses.' },
+      ],
+      spellSlots: 'full',
+    },
+    {
+      id: 'fighter',
+      name: 'Fighter',
+      color: '#3A3A5C',
+      hitDie: 'd10',
+      primaryAbility: 'Strength or Dexterity',
+      savingThrows: ['Strength', 'Constitution'],
+      abilityPriorities: [
+        { priority: 1, ability: 'Strength or Dexterity', reason: 'Attack rolls and damage (build dependent)' },
+        { priority: 2, ability: 'Constitution',          reason: 'HP and Second Wind healing' },
+        { priority: 3, ability: 'Wisdom',                reason: 'Mental saves and Perception' },
+        { priority: 4, ability: 'Intelligence',          reason: 'Eldritch Knight spellcasting' },
+        { priority: 5, ability: 'Charisma',              reason: 'Social interactions' },
+      ],
+      resources: [
+        { name: 'Second Wind',  formula: (lvl) => '1d10 + fighter level HP',                          recharge: 'Short or long rest' },
+        { name: 'Action Surge', formula: (lvl) => lvl >= 17 ? 2 : 1,                                  recharge: 'Short or long rest' },
+        { name: 'Indomitable', formula: (lvl) => lvl >= 17 ? 3 : lvl >= 13 ? 2 : lvl >= 9 ? 1 : 0,  recharge: 'Long rest' },
+        { name: 'Extra Attacks',formula: (lvl) => lvl >= 20 ? 4 : lvl >= 11 ? 3 : lvl >= 5 ? 2 : 1,  recharge: 'Passive' },
+      ],
+      actionEconomy: [
+        { action: 'Second Wind',  type: 'Bonus action', notes: 'Regain 1d10 + fighter level HP once per short/long rest' },
+        { action: 'Action Surge', type: 'Free',         notes: 'Take one additional action on your turn' },
+        { action: 'Riposte',      type: 'Reaction',     notes: 'When a creature misses you, attack it (Battle Master)' },
+        { action: 'War Magic',    type: 'Bonus action', notes: 'Attack after casting a cantrip (Eldritch Knight)' },
+      ],
+      subclassLevel: 3,
+      subclassName: 'Martial Archetype',
+      subclasses: [
+        { name: 'Champion',       desc: 'Expanded crits (19-20), improved athletics, additional fighting styles' },
+        { name: 'Battle Master',  desc: 'Superiority dice (d8s) fueling tactical maneuvers' },
+        { name: 'Eldritch Knight',desc: 'Abjuration and Evocation spellcasting, weapon bonding' },
+      ],
+      features: [
+        { level: 1,  name: 'Fighting Style',         type: 'Feature',  desc: 'Choose a fighting style: Archery, Defense, Dueling, Great Weapon, Protection, or Two-Weapon.' },
+        { level: 1,  name: 'Second Wind',            type: 'Feature',  desc: 'Bonus action: regain 1d10 + fighter level HP (1/short rest).' },
+        { level: 2,  name: 'Action Surge',           type: 'Feature',  desc: 'Take one additional action on your turn (1/short rest; 2/short rest at level 17).' },
+        { level: 3,  name: 'Martial Archetype',      type: 'Subclass', desc: 'Choose your Martial Archetype subclass.' },
+        { level: 4,  name: 'ASI',                    type: 'ASI',      desc: '+2 to one ability score or +1 to two, or a feat.' },
+        { level: 5,  name: 'Extra Attack',           type: 'Feature',  desc: 'Attack twice when you take the Attack action.' },
+        { level: 6,  name: 'ASI',                    type: 'ASI',      desc: '+2 to one ability score or +1 to two, or a feat.' },
+        { level: 7,  name: 'Subclass feature',       type: 'Subclass', desc: 'Gain your subclass\'s level 7 feature.' },
+        { level: 8,  name: 'ASI',                    type: 'ASI',      desc: '+2 to one ability score or +1 to two, or a feat.' },
+        { level: 9,  name: 'Indomitable (1)',        type: 'Feature',  desc: 'Reroll a failed saving throw (1/long rest).' },
+        { level: 10, name: 'Subclass feature',       type: 'Subclass', desc: 'Gain your subclass\'s level 10 feature.' },
+        { level: 11, name: 'Extra Attack (3)',        type: 'Feature',  desc: 'Attack three times when you take the Attack action.' },
+        { level: 12, name: 'ASI',                    type: 'ASI',      desc: '+2 to one ability score or +1 to two, or a feat.' },
+        { level: 13, name: 'Indomitable (2)',        type: 'Feature',  desc: 'Reroll failed saving throws up to twice per long rest.' },
+        { level: 14, name: 'ASI',                    type: 'ASI',      desc: '+2 to one ability score or +1 to two, or a feat.' },
+        { level: 15, name: 'Subclass feature',       type: 'Subclass', desc: 'Gain your subclass\'s level 15 feature.' },
+        { level: 16, name: 'ASI',                    type: 'ASI',      desc: '+2 to one ability score or +1 to two, or a feat.' },
+        { level: 17, name: 'Action Surge (2)',       type: 'Feature',  desc: 'Use Action Surge twice per short rest.' },
+        { level: 17, name: 'Indomitable (3)',        type: 'Feature',  desc: 'Reroll failed saving throws up to three times per long rest.' },
+        { level: 18, name: 'Subclass feature',       type: 'Subclass', desc: 'Gain your subclass\'s level 18 feature.' },
+        { level: 19, name: 'ASI',                    type: 'ASI',      desc: '+2 to one ability score or +1 to two, or a feat.' },
+        { level: 20, name: 'Extra Attack (4)',        type: 'Capstone', desc: 'Attack four times when you take the Attack action.' },
+      ],
+      spellSlots: null,
+    },
+    {
+      id: 'monk',
+      name: 'Monk',
+      color: '#2E7D32',
+      hitDie: 'd8',
+      primaryAbility: 'Dexterity & Wisdom',
+      savingThrows: ['Strength', 'Dexterity'],
+      abilityPriorities: [
+        { priority: 1, ability: 'Dexterity',    reason: 'Attack rolls, AC, and initiative' },
+        { priority: 2, ability: 'Wisdom',       reason: 'Unarmored Defense (AC = 10 + Dex + Wis) and saves' },
+        { priority: 3, ability: 'Constitution', reason: 'HP pool' },
+        { priority: 4, ability: 'Strength',     reason: 'Athletics checks' },
+        { priority: 5, ability: 'Charisma',     reason: 'Social interactions' },
+      ],
+      resources: [
+        { name: 'Ki points',         formula: (lvl) => lvl,                                                                  recharge: 'Short or long rest' },
+        { name: 'Martial Arts die',  formula: (lvl) => lvl >= 17 ? 'd10' : lvl >= 11 ? 'd8' : lvl >= 5 ? 'd6' : 'd4',      recharge: 'Passive' },
+        { name: 'Unarmored Movement',formula: (lvl) => `+${lvl >= 18 ? 30 : lvl >= 14 ? 25 : lvl >= 10 ? 20 : lvl >= 6 ? 15 : 10} ft`, recharge: 'Passive' },
+        { name: 'Unarmored AC',      formula: (lvl) => '10 + Dex mod + Wis mod',                                             recharge: 'Passive' },
+      ],
+      actionEconomy: [
+        { action: 'Flurry of Blows',   type: 'Bonus action', notes: '2 ki — make two unarmed strikes' },
+        { action: 'Patient Defense',   type: 'Bonus action', notes: '1 ki — take the Dodge action' },
+        { action: 'Step of the Wind',  type: 'Bonus action', notes: '1 ki — Dash or Disengage; jump distance doubled' },
+        { action: 'Stunning Strike',   type: 'Free (on hit)', notes: '1 ki — creature makes Con save or is stunned (level 5)' },
+        { action: 'Deflect Missiles',  type: 'Reaction',     notes: 'Reduce ranged attack damage by 1d10 + Dex + monk level (level 3)' },
+      ],
+      subclassLevel: 3,
+      subclassName: 'Monastic Tradition',
+      subclasses: [
+        { name: 'Way of the Open Hand',    desc: 'Manipulate enemies with Flurry of Blows; push, prone, or deny reactions' },
+        { name: 'Way of Shadow',           desc: 'Stealth and teleportation; cast shadow spells with ki' },
+        { name: 'Way of the Four Elements',desc: 'Spend ki to cast elemental spells' },
+      ],
+      features: [
+        { level: 1,  name: 'Unarmored Defense',      type: 'Feature',  desc: 'AC = 10 + Dex modifier + Wis modifier when unarmored.' },
+        { level: 1,  name: 'Martial Arts',            type: 'Feature',  desc: 'Use Dex for unarmed/monk weapon attacks; unarmed strikes deal 1d4 damage.' },
+        { level: 2,  name: 'Ki',                      type: 'Feature',  desc: 'Gain ki points equal to your monk level. Fuel Flurry, Patient Defense, Step of the Wind.' },
+        { level: 2,  name: 'Unarmored Movement (+10)',type: 'Feature',  desc: '+10 ft movement speed when unarmored.' },
+        { level: 3,  name: 'Monastic Tradition',      type: 'Subclass', desc: 'Choose your Monastic Tradition subclass.' },
+        { level: 3,  name: 'Deflect Missiles',        type: 'Feature',  desc: 'Use reaction to reduce ranged attack damage. If reduced to 0, catch and throw the missile.' },
+        { level: 4,  name: 'Slow Fall',               type: 'Feature',  desc: 'Reaction: reduce falling damage by 5 × monk level.' },
+        { level: 4,  name: 'ASI',                     type: 'ASI',      desc: '+2 to one ability score or +1 to two, or a feat.' },
+        { level: 5,  name: 'Extra Attack',            type: 'Feature',  desc: 'Attack twice when you take the Attack action.' },
+        { level: 5,  name: 'Stunning Strike',         type: 'Feature',  desc: 'Spend 1 ki when you hit: creature makes Con save or is stunned until your next turn.' },
+        { level: 5,  name: 'Martial Arts (d6)',       type: 'Feature',  desc: 'Martial Arts die increases to d6.' },
+        { level: 6,  name: 'Ki-Empowered Strikes',   type: 'Feature',  desc: 'Unarmed strikes count as magical for overcoming resistance.' },
+        { level: 6,  name: 'Subclass feature',        type: 'Subclass', desc: 'Gain your subclass\'s level 6 feature.' },
+        { level: 6,  name: 'Unarmored Movement (+15)',type: 'Feature',  desc: '+15 ft movement speed when unarmored.' },
+        { level: 7,  name: 'Evasion',                 type: 'Feature',  desc: 'No damage on successful Dex saves; half damage on failed saves.' },
+        { level: 7,  name: 'Stillness of Mind',       type: 'Feature',  desc: 'Use action to end charmed or frightened condition on yourself.' },
+        { level: 8,  name: 'ASI',                     type: 'ASI',      desc: '+2 to one ability score or +1 to two, or a feat.' },
+        { level: 9,  name: 'Unarmored Movement (+15)',type: 'Feature',  desc: 'Can run up walls and across liquids briefly.' },
+        { level: 10, name: 'Purity of Body',          type: 'Feature',  desc: 'Immune to disease and poison.' },
+        { level: 10, name: 'Unarmored Movement (+20)',type: 'Feature',  desc: '+20 ft movement speed when unarmored.' },
+        { level: 11, name: 'Subclass feature',        type: 'Subclass', desc: 'Gain your subclass\'s level 11 feature.' },
+        { level: 11, name: 'Martial Arts (d8)',       type: 'Feature',  desc: 'Martial Arts die increases to d8.' },
+        { level: 12, name: 'ASI',                     type: 'ASI',      desc: '+2 to one ability score or +1 to two, or a feat.' },
+        { level: 13, name: 'Tongue of Sun and Moon',  type: 'Feature',  desc: 'Understand all spoken languages and be understood by any creature with language.' },
+        { level: 14, name: 'Diamond Soul',            type: 'Feature',  desc: 'Proficiency in all saving throws. Spend 1 ki to reroll a failed save.' },
+        { level: 14, name: 'Unarmored Movement (+25)',type: 'Feature',  desc: '+25 ft movement speed when unarmored.' },
+        { level: 15, name: 'Timeless Body',           type: 'Feature',  desc: 'No longer need food or water; age at 1/10 the normal rate.' },
+        { level: 15, name: 'Martial Arts (d8)',       type: 'Feature',  desc: 'Martial Arts die remains d8.' },
+        { level: 16, name: 'ASI',                     type: 'ASI',      desc: '+2 to one ability score or +1 to two, or a feat.' },
+        { level: 17, name: 'Subclass feature',        type: 'Subclass', desc: 'Gain your subclass\'s level 17 feature.' },
+        { level: 17, name: 'Martial Arts (d10)',      type: 'Feature',  desc: 'Martial Arts die increases to d10.' },
+        { level: 18, name: 'Empty Body',              type: 'Feature',  desc: '4 ki: become invisible for 1 minute with resistance to all but force damage. 8 ki: Astral Projection.' },
+        { level: 18, name: 'Unarmored Movement (+30)',type: 'Feature',  desc: '+30 ft movement speed when unarmored.' },
+        { level: 19, name: 'ASI',                     type: 'ASI',      desc: '+2 to one ability score or +1 to two, or a feat.' },
+        { level: 20, name: 'Perfect Self',            type: 'Capstone', desc: 'Regain 4 ki points at the start of combat if you have fewer than that.' },
+      ],
+      spellSlots: null,
+    },
+    {
+      id: 'paladin',
+      name: 'Paladin',
+      color: '#8B0000',
+      hitDie: 'd10',
+      primaryAbility: 'Strength & Charisma',
+      savingThrows: ['Wisdom', 'Charisma'],
+      abilityPriorities: [
+        { priority: 1, ability: 'Strength',     reason: 'Melee attack rolls and damage' },
+        { priority: 2, ability: 'Charisma',     reason: 'Spellcasting and Aura of Protection' },
+        { priority: 3, ability: 'Constitution', reason: 'Concentration and HP' },
+        { priority: 4, ability: 'Dexterity',    reason: 'AC if finesse/ranged build' },
+        { priority: 5, ability: 'Wisdom',       reason: 'Perception and mental saves' },
+      ],
+      resources: [
+        { name: 'Lay on Hands pool', formula: (lvl) => `${lvl * 5} HP`,                     recharge: 'Long rest' },
+        { name: 'Channel Divinity',  formula: (lvl) => lvl >= 18 ? 2 : 1,                   recharge: 'Short or long rest' },
+        { name: 'Divine Smite',      formula: (lvl) => 'Expend spell slots on hit',          recharge: 'Passive' },
+        { name: 'Spell slots',       formula: (lvl) => 'Half caster — see slot table',       recharge: 'Long rest' },
+      ],
+      actionEconomy: [
+        { action: 'Divine Smite',    type: 'Free (on hit)', notes: 'Expend a spell slot after hitting; deal 2d8 radiant per slot level (+1d8 vs undead/fiends)' },
+        { action: 'Lay on Hands',    type: 'Action',        notes: 'Restore HP from your pool (5 HP per paladin level)' },
+        { action: 'Channel Divinity',type: 'Action',        notes: 'Sacred Weapon or oath-specific effect' },
+        { action: 'Aura of Protection', type: 'Passive',   notes: 'Allies within 10 ft (30 ft at level 18) add Cha mod to saving throws (level 6)' },
+      ],
+      subclassLevel: 3,
+      subclassName: 'Sacred Oath',
+      subclasses: [
+        { name: 'Oath of Devotion',  desc: 'Classic paladin; Sacred Weapon, Turn the Unholy, aura vs enchantment' },
+        { name: 'Oath of the Ancients', desc: 'Nature and fey; aura of warding vs spells, resistance to magic damage' },
+        { name: 'Oath of Vengeance', desc: 'Hunter of evil; Vow of Enmity, advantage on attacks against marked foe' },
+      ],
+      features: [
+        { level: 1,  name: 'Divine Sense',           type: 'Feature',  desc: 'Detect celestials, fiends, and undead within 60 ft (1 + Cha mod uses/long rest).' },
+        { level: 1,  name: 'Lay on Hands',           type: 'Feature',  desc: 'Restore HP from a pool of 5 × paladin level HP (long rest).' },
+        { level: 2,  name: 'Fighting Style',         type: 'Feature',  desc: 'Choose a fighting style: Defense, Dueling, Great Weapon, or Protection.' },
+        { level: 2,  name: 'Spellcasting',           type: 'Feature',  desc: 'Half caster using Charisma. Prepare Cha mod + half level spells.' },
+        { level: 2,  name: 'Divine Smite',           type: 'Feature',  desc: 'After hitting, expend a spell slot to deal 2d8 + 1d8/slot level radiant damage.' },
+        { level: 3,  name: 'Divine Health',          type: 'Feature',  desc: 'Immune to disease.' },
+        { level: 3,  name: 'Sacred Oath',            type: 'Subclass', desc: 'Choose your Sacred Oath subclass and gain oath spells and Channel Divinity.' },
+        { level: 4,  name: 'ASI',                    type: 'ASI',      desc: '+2 to one ability score or +1 to two, or a feat.' },
+        { level: 5,  name: 'Extra Attack',           type: 'Feature',  desc: 'Attack twice when you take the Attack action.' },
+        { level: 5,  name: 'Destroy Undead',         type: 'Feature',  desc: 'Turn Undead destroys undead of CR 1/2 or lower.' },
+        { level: 6,  name: 'Aura of Protection',     type: 'Feature',  desc: 'You and allies within 10 ft add your Cha modifier to saving throws.' },
+        { level: 7,  name: 'Subclass feature',       type: 'Subclass', desc: 'Gain your subclass\'s level 7 feature.' },
+        { level: 8,  name: 'ASI',                    type: 'ASI',      desc: '+2 to one ability score or +1 to two, or a feat.' },
+        { level: 10, name: 'Aura of Courage',        type: 'Feature',  desc: 'You and allies within 10 ft can\'t be frightened while you are conscious.' },
+        { level: 11, name: 'Improved Divine Smite',  type: 'Feature',  desc: 'All melee weapon hits deal extra 1d8 radiant damage.' },
+        { level: 12, name: 'ASI',                    type: 'ASI',      desc: '+2 to one ability score or +1 to two, or a feat.' },
+        { level: 14, name: 'Cleansing Touch',        type: 'Feature',  desc: 'Use action to end one spell on yourself or a willing creature (Cha mod uses/long rest).' },
+        { level: 15, name: 'Subclass feature',       type: 'Subclass', desc: 'Gain your subclass\'s level 15 feature.' },
+        { level: 16, name: 'ASI',                    type: 'ASI',      desc: '+2 to one ability score or +1 to two, or a feat.' },
+        { level: 17, name: 'Auras expand to 30 ft',  type: 'Feature',  desc: 'Aura of Protection and Aura of Courage now extend to 30 ft.' },
+        { level: 18, name: 'Subclass feature',       type: 'Subclass', desc: 'Gain your subclass\'s level 18 feature.' },
+        { level: 19, name: 'ASI',                    type: 'ASI',      desc: '+2 to one ability score or +1 to two, or a feat.' },
+        { level: 20, name: 'Sacred Oath capstone',   type: 'Capstone', desc: 'Gain your subclass\'s powerful capstone ability.' },
+      ],
+      spellSlots: 'half',
+    },
+    {
+      id: 'ranger',
+      name: 'Ranger',
+      color: '#2E7D32',
+      hitDie: 'd10',
+      primaryAbility: 'Dexterity & Wisdom',
+      savingThrows: ['Strength', 'Dexterity'],
+      abilityPriorities: [
+        { priority: 1, ability: 'Dexterity',    reason: 'Ranged attack rolls, AC, and initiative' },
+        { priority: 2, ability: 'Wisdom',       reason: 'Spellcasting modifier' },
+        { priority: 3, ability: 'Constitution', reason: 'Concentration and HP' },
+        { priority: 4, ability: 'Strength',     reason: 'Melee build attacks' },
+        { priority: 5, ability: 'Intelligence', reason: 'Investigation and Arcana' },
+      ],
+      resources: [
+        { name: "Hunter's Mark",  formula: (lvl) => 'Concentration, lasts 1 hr (3rd level +); move on kill as bonus action', recharge: 'Spell slot' },
+        { name: 'Spell slots',    formula: (lvl) => 'Half caster — see slot table',                                          recharge: 'Long rest' },
+        { name: 'Favored Enemy',  formula: (lvl) => lvl >= 6 ? '2 enemy types' : '1 enemy type',                            recharge: 'Passive' },
+      ],
+      actionEconomy: [
+        { action: "Hunter's Mark",    type: 'Bonus action', notes: 'Concentration; +1d6 damage to marked target and track easily' },
+        { action: 'Primeval Awareness',type: 'Action',      notes: 'Expend spell slot to sense favored enemies within range (level 3)' },
+        { action: 'Vanish',           type: 'Bonus action', notes: 'Hide as a bonus action; can\'t be tracked nonmagically (level 14)' },
+      ],
+      subclassLevel: 3,
+      subclassName: 'Ranger Archetype',
+      subclasses: [
+        { name: 'Hunter',       desc: 'Versatile damage options: Colossus Slayer, Giant Killer, Horde Breaker' },
+        { name: 'Beast Master', desc: 'Bond with an animal companion that fights alongside you' },
+      ],
+      features: [
+        { level: 1,  name: 'Favored Enemy',       type: 'Feature',  desc: 'Advantage on Survival to track and on Int checks to recall info about chosen enemy type.' },
+        { level: 1,  name: 'Natural Explorer',    type: 'Feature',  desc: 'Expertise in a terrain type; ignore difficult terrain, no penalty for tracking.' },
+        { level: 2,  name: 'Fighting Style',      type: 'Feature',  desc: 'Choose: Archery (+2 ranged), Defense (+1 AC), Dueling (+2 melee), or Two-Weapon.' },
+        { level: 2,  name: 'Spellcasting',        type: 'Feature',  desc: 'Half caster using Wisdom. Know spells from Ranger list.' },
+        { level: 3,  name: 'Ranger Archetype',    type: 'Subclass', desc: 'Choose your Ranger Archetype subclass.' },
+        { level: 3,  name: 'Primeval Awareness',  type: 'Feature',  desc: 'Expend a spell slot to detect favored enemies within 1 mile (6 miles in favored terrain).' },
+        { level: 4,  name: 'ASI',                 type: 'ASI',      desc: '+2 to one ability score or +1 to two, or a feat.' },
+        { level: 5,  name: 'Extra Attack',        type: 'Feature',  desc: 'Attack twice when you take the Attack action.' },
+        { level: 6,  name: 'Favored Enemy (2nd)', type: 'Feature',  desc: 'Choose a second favored enemy type.' },
+        { level: 6,  name: "Natural Explorer (2nd)", type: 'Feature', desc: 'Choose a second favored terrain type.' },
+        { level: 7,  name: 'Subclass feature',    type: 'Subclass', desc: 'Gain your subclass\'s level 7 feature.' },
+        { level: 8,  name: "Land's Stride",       type: 'Feature',  desc: 'Move through nonmagical difficult terrain at no cost; advantage on saves vs plants.' },
+        { level: 8,  name: 'ASI',                 type: 'ASI',      desc: '+2 to one ability score or +1 to two, or a feat.' },
+        { level: 10, name: "Natural Explorer (3rd)", type: 'Feature', desc: 'Choose a third favored terrain type.' },
+        { level: 10, name: 'Hide in Plain Sight', type: 'Feature',  desc: 'Spend 1 minute camouflaging; +10 Stealth checks while stationary.' },
+        { level: 11, name: 'Subclass feature',    type: 'Subclass', desc: 'Gain your subclass\'s level 11 feature.' },
+        { level: 12, name: 'ASI',                 type: 'ASI',      desc: '+2 to one ability score or +1 to two, or a feat.' },
+        { level: 14, name: 'Vanish',              type: 'Feature',  desc: 'Hide as a bonus action; can\'t be tracked by nonmagical means.' },
+        { level: 14, name: 'Favored Enemy (3rd)', type: 'Feature',  desc: 'Choose a third favored enemy type.' },
+        { level: 15, name: 'Subclass feature',    type: 'Subclass', desc: 'Gain your subclass\'s level 15 feature.' },
+        { level: 16, name: 'ASI',                 type: 'ASI',      desc: '+2 to one ability score or +1 to two, or a feat.' },
+        { level: 18, name: 'Feral Senses',        type: 'Feature',  desc: 'Detect invisible creatures within 30 ft; no disadvantage attacking invisible creatures.' },
+        { level: 19, name: 'ASI',                 type: 'ASI',      desc: '+2 to one ability score or +1 to two, or a feat.' },
+        { level: 20, name: 'Foe Slayer',          type: 'Capstone', desc: 'Once per turn, add Wis modifier to attack or damage roll against a favored enemy.' },
+      ],
+      spellSlots: 'half',
+    },
+    {
+      id: 'rogue',
+      name: 'Rogue',
+      color: '#3A3A5C',
+      hitDie: 'd8',
+      primaryAbility: 'Dexterity',
+      savingThrows: ['Dexterity', 'Intelligence'],
+      abilityPriorities: [
+        { priority: 1, ability: 'Dexterity',    reason: 'Attack rolls, AC, Stealth, and Thieves\' Tools' },
+        { priority: 2, ability: 'Intelligence', reason: 'Arcane Trickster spellcasting and investigation' },
+        { priority: 3, ability: 'Constitution', reason: 'HP pool' },
+        { priority: 4, ability: 'Wisdom',       reason: 'Perception and Insight' },
+        { priority: 5, ability: 'Charisma',     reason: 'Social skills: Deception, Persuasion' },
+      ],
+      resources: [
+        { name: 'Sneak Attack', formula: (lvl) => `${Math.ceil(lvl/2)}d6`, recharge: 'Once per turn' },
+        { name: 'Expertise',    formula: (lvl) => lvl >= 6 ? '4 skills' : '2 skills', recharge: 'Passive' },
+      ],
+      actionEconomy: [
+        { action: 'Cunning Action',    type: 'Bonus action', notes: 'Dash, Disengage, or Hide as a bonus action (level 2)' },
+        { action: 'Sneak Attack',      type: 'Free (on hit)', notes: 'Once per turn when you have advantage or an ally is adjacent to target' },
+        { action: 'Uncanny Dodge',     type: 'Reaction',     notes: 'Halve the damage from one attack you can see (level 5)' },
+        { action: 'Evasion',           type: 'Passive',      notes: 'No damage on successful Dex saves; half on failed (level 7)' },
+      ],
+      subclassLevel: 3,
+      subclassName: 'Roguish Archetype',
+      subclasses: [
+        { name: 'Thief',            desc: 'Fast Hands (bonus action use objects), climb speed, use magic items' },
+        { name: 'Assassin',         desc: 'Disguise expertise; crits on surprised creatures; infiltration mastery' },
+        { name: 'Arcane Trickster', desc: 'Enchantment/Illusion spellcasting; Mage Hand legerdemain' },
+      ],
+      features: [
+        { level: 1,  name: 'Expertise',              type: 'Feature',  desc: 'Double proficiency bonus on two chosen skills (or Thieves\' Tools).' },
+        { level: 1,  name: 'Sneak Attack (1d6)',      type: 'Feature',  desc: 'Deal extra 1d6 damage once per turn when you have advantage or an ally is adjacent to target.' },
+        { level: 1,  name: "Thieves' Cant",           type: 'Feature',  desc: 'Know the secret language of rogues and the criminal underworld.' },
+        { level: 2,  name: 'Cunning Action',          type: 'Feature',  desc: 'Bonus action: Dash, Disengage, or Hide.' },
+        { level: 3,  name: 'Roguish Archetype',       type: 'Subclass', desc: 'Choose your Roguish Archetype subclass.' },
+        { level: 3,  name: 'Sneak Attack (2d6)',      type: 'Feature',  desc: 'Sneak Attack increases to 2d6.' },
+        { level: 4,  name: 'ASI',                     type: 'ASI',      desc: '+2 to one ability score or +1 to two, or a feat.' },
+        { level: 5,  name: 'Uncanny Dodge',           type: 'Feature',  desc: 'Reaction: halve the damage from one attack you can see.' },
+        { level: 5,  name: 'Sneak Attack (3d6)',      type: 'Feature',  desc: 'Sneak Attack increases to 3d6.' },
+        { level: 6,  name: 'Expertise (2 more)',      type: 'Feature',  desc: 'Double proficiency on two more skills.' },
+        { level: 6,  name: 'Sneak Attack (3d6)',      type: 'Feature',  desc: 'Sneak Attack remains 3d6.' },
+        { level: 7,  name: 'Evasion',                 type: 'Feature',  desc: 'No damage on successful Dex saves; half damage on failed saves.' },
+        { level: 7,  name: 'Sneak Attack (4d6)',      type: 'Feature',  desc: 'Sneak Attack increases to 4d6.' },
+        { level: 8,  name: 'ASI',                     type: 'ASI',      desc: '+2 to one ability score or +1 to two, or a feat.' },
+        { level: 9,  name: 'Subclass feature',        type: 'Subclass', desc: 'Gain your subclass\'s level 9 feature.' },
+        { level: 9,  name: 'Sneak Attack (5d6)',      type: 'Feature',  desc: 'Sneak Attack increases to 5d6.' },
+        { level: 10, name: 'ASI',                     type: 'ASI',      desc: '+2 to one ability score or +1 to two, or a feat.' },
+        { level: 11, name: 'Reliable Talent',         type: 'Feature',  desc: 'Treat any proficient ability check roll of 9 or less as a 10.' },
+        { level: 11, name: 'Sneak Attack (6d6)',      type: 'Feature',  desc: 'Sneak Attack increases to 6d6.' },
+        { level: 12, name: 'ASI',                     type: 'ASI',      desc: '+2 to one ability score or +1 to two, or a feat.' },
+        { level: 13, name: 'Subclass feature',        type: 'Subclass', desc: 'Gain your subclass\'s level 13 feature.' },
+        { level: 13, name: 'Sneak Attack (7d6)',      type: 'Feature',  desc: 'Sneak Attack increases to 7d6.' },
+        { level: 14, name: 'Blindsense',              type: 'Feature',  desc: 'Detect hidden and invisible creatures within 10 ft.' },
+        { level: 14, name: 'Sneak Attack (7d6)',      type: 'Feature',  desc: 'Sneak Attack remains 7d6.' },
+        { level: 15, name: 'Slippery Mind',           type: 'Feature',  desc: 'Gain proficiency in Wisdom saving throws.' },
+        { level: 15, name: 'Sneak Attack (8d6)',      type: 'Feature',  desc: 'Sneak Attack increases to 8d6.' },
+        { level: 16, name: 'ASI',                     type: 'ASI',      desc: '+2 to one ability score or +1 to two, or a feat.' },
+        { level: 17, name: 'Subclass feature',        type: 'Subclass', desc: 'Gain your subclass\'s level 17 feature.' },
+        { level: 17, name: 'Sneak Attack (9d6)',      type: 'Feature',  desc: 'Sneak Attack increases to 9d6.' },
+        { level: 18, name: 'Elusive',                 type: 'Feature',  desc: 'No attack roll has advantage against you unless you are incapacitated.' },
+        { level: 18, name: 'Sneak Attack (9d6)',      type: 'Feature',  desc: 'Sneak Attack remains 9d6.' },
+        { level: 19, name: 'ASI',                     type: 'ASI',      desc: '+2 to one ability score or +1 to two, or a feat.' },
+        { level: 19, name: 'Sneak Attack (10d6)',     type: 'Feature',  desc: 'Sneak Attack increases to 10d6.' },
+        { level: 20, name: 'Stroke of Luck',          type: 'Capstone', desc: 'Turn a miss into a hit or a failed ability check into a 20 (1/long rest).' },
+      ],
+      spellSlots: null,
+    },
+    {
+      id: 'sorcerer',
+      name: 'Sorcerer',
+      color: '#8B0000',
+      hitDie: 'd6',
+      primaryAbility: 'Charisma',
+      savingThrows: ['Constitution', 'Charisma'],
+      abilityPriorities: [
+        { priority: 1, ability: 'Charisma',     reason: 'Spellcasting modifier' },
+        { priority: 2, ability: 'Constitution', reason: 'Concentration and HP' },
+        { priority: 3, ability: 'Dexterity',    reason: 'AC and initiative' },
+        { priority: 4, ability: 'Wisdom',       reason: 'Mental saves' },
+        { priority: 5, ability: 'Intelligence', reason: 'Arcana skill' },
+      ],
+      resources: [
+        { name: 'Sorcery Points', formula: (lvl) => lvl >= 2 ? lvl : 0,              recharge: 'Long rest' },
+        { name: 'Spell slots',    formula: (lvl) => 'Full caster — see slot table',  recharge: 'Long rest' },
+        { name: 'Metamagic options', formula: (lvl) => lvl >= 17 ? 4 : lvl >= 10 ? 3 : 2, recharge: 'Passive' },
+      ],
+      actionEconomy: [
+        { action: 'Quickened Spell',  type: 'Metamagic', notes: '2 sorcery points — cast a spell as a bonus action instead of an action' },
+        { action: 'Twinned Spell',    type: 'Metamagic', notes: 'Points = spell level — target a second creature with a single-target spell' },
+        { action: 'Subtle Spell',     type: 'Metamagic', notes: '1 sorcery point — cast without verbal or somatic components' },
+        { action: 'Heightened Spell', type: 'Metamagic', notes: '3 sorcery points — one target has disadvantage on first save' },
+      ],
+      subclassLevel: 1,
+      subclassName: 'Sorcerous Origin',
+      subclasses: [
+        { name: 'Draconic Bloodline', desc: 'Dragon ancestor; bonus HP, natural armor (AC 13 + Dex), elemental affinity' },
+        { name: 'Wild Magic',         desc: 'Wild Magic Surge table; Tides of Chaos for advantage; Bend Luck reaction' },
+      ],
+      features: [
+        { level: 1,  name: 'Spellcasting',          type: 'Feature',  desc: 'Full caster using Charisma. Know a limited number of spells from the Sorcerer list.' },
+        { level: 1,  name: 'Sorcerous Origin',      type: 'Subclass', desc: 'Choose your Sorcerous Origin subclass.' },
+        { level: 2,  name: 'Font of Magic',         type: 'Feature',  desc: 'Gain sorcery points (= sorcerer level from level 2). Convert between spell slots and sorcery points.' },
+        { level: 3,  name: 'Metamagic (2)',         type: 'Feature',  desc: 'Choose 2 Metamagic options: Careful, Distant, Empowered, Extended, Heightened, Quickened, Subtle, or Twinned.' },
+        { level: 4,  name: 'ASI',                   type: 'ASI',      desc: '+2 to one ability score or +1 to two, or a feat.' },
+        { level: 6,  name: 'Subclass feature',      type: 'Subclass', desc: 'Gain your subclass\'s level 6 feature.' },
+        { level: 8,  name: 'ASI',                   type: 'ASI',      desc: '+2 to one ability score or +1 to two, or a feat.' },
+        { level: 10, name: 'Metamagic (3)',         type: 'Feature',  desc: 'Learn one additional Metamagic option.' },
+        { level: 12, name: 'ASI',                   type: 'ASI',      desc: '+2 to one ability score or +1 to two, or a feat.' },
+        { level: 14, name: 'Subclass feature',      type: 'Subclass', desc: 'Gain your subclass\'s level 14 feature.' },
+        { level: 16, name: 'ASI',                   type: 'ASI',      desc: '+2 to one ability score or +1 to two, or a feat.' },
+        { level: 17, name: 'Metamagic (4)',         type: 'Feature',  desc: 'Learn one additional Metamagic option.' },
+        { level: 18, name: 'Subclass feature',      type: 'Subclass', desc: 'Gain your subclass\'s level 18 feature.' },
+        { level: 19, name: 'ASI',                   type: 'ASI',      desc: '+2 to one ability score or +1 to two, or a feat.' },
+        { level: 20, name: 'Sorcerous Restoration', type: 'Capstone', desc: 'Regain 4 expended sorcery points on a short rest.' },
+      ],
+      spellSlots: 'full',
+    },
+    {
+      id: 'warlock',
+      name: 'Warlock',
+      color: '#3A3A5C',
+      hitDie: 'd8',
+      primaryAbility: 'Charisma',
+      savingThrows: ['Wisdom', 'Charisma'],
+      abilityPriorities: [
+        { priority: 1, ability: 'Charisma',     reason: 'Spellcasting modifier and Eldritch Blast damage' },
+        { priority: 2, ability: 'Constitution', reason: 'Concentration and HP' },
+        { priority: 3, ability: 'Dexterity',    reason: 'AC and initiative' },
+        { priority: 4, ability: 'Wisdom',       reason: 'Mental saves' },
+        { priority: 5, ability: 'Intelligence', reason: 'Arcana and Investigation' },
+      ],
+      resources: [
+        { name: 'Pact Magic slots', formula: (lvl) => lvl >= 9 ? 4 : lvl >= 7 ? 4 : lvl >= 5 ? 3 : lvl >= 2 ? 2 : 1, recharge: 'Short or long rest' },
+        { name: 'Slot level',       formula: (lvl) => lvl >= 9 ? '5th' : lvl >= 7 ? '4th' : lvl >= 5 ? '3rd' : lvl >= 3 ? '2nd' : '1st', recharge: 'Passive' },
+        { name: 'Invocations known',formula: (lvl) => lvl >= 15 ? 8 : lvl >= 12 ? 7 : lvl >= 9 ? 6 : lvl >= 7 ? 5 : lvl >= 5 ? 4 : lvl >= 3 ? 3 : 2, recharge: 'Passive' },
+      ],
+      actionEconomy: [
+        { action: 'Eldritch Blast', type: 'Action (cantrip)', notes: 'Core damage cantrip; enhanced by invocations' },
+        { action: 'Hex',            type: 'Bonus action',     notes: 'Concentration; +1d6 necrotic on attacks, disadvantage on chosen ability' },
+        { action: 'Darkness/Devil\'s Sight', type: 'Invocation', notes: 'Classic combo: cast Darkness, see through it, enemies can\'t see you' },
+      ],
+      subclassLevel: 1,
+      subclassName: 'Otherworldly Patron',
+      subclasses: [
+        { name: 'The Archfey',      desc: 'Charm and fear; Fey Presence, Misty Escape, Beguiling Defenses' },
+        { name: 'The Fiend',        desc: 'Fire and necrotic; Dark One\'s Blessing (temp HP on kills), expanded spell list' },
+        { name: 'The Great Old One',desc: 'Telepathy and mind magic; Awakened Mind, Entropic Ward, Thought Shield' },
+      ],
+      features: [
+        { level: 1,  name: 'Otherworldly Patron',    type: 'Subclass', desc: 'Choose your Patron subclass and gain patron spells and Expanded Spells.' },
+        { level: 1,  name: 'Pact Magic',             type: 'Feature',  desc: 'Unique spell slot system: fewer slots but recharge on short rests. All slots are the same level.' },
+        { level: 2,  name: 'Eldritch Invocations (2)',type:'Feature',  desc: 'Choose 2 invocations to customize Eldritch Blast and gain new abilities.' },
+        { level: 3,  name: 'Pact Boon',              type: 'Feature',  desc: 'Choose: Pact of the Blade (summon weapon), Chain (improved familiar), or Tome (extra cantrips + rituals).' },
+        { level: 3,  name: 'Eldritch Invocations (3)',type:'Feature',  desc: 'Learn one additional invocation (3 total).' },
+        { level: 4,  name: 'ASI',                    type: 'ASI',      desc: '+2 to one ability score or +1 to two, or a feat.' },
+        { level: 5,  name: 'Eldritch Invocations (4)',type:'Feature',  desc: 'Learn one additional invocation (4 total).' },
+        { level: 6,  name: 'Subclass feature',       type: 'Subclass', desc: 'Gain your subclass\'s level 6 feature.' },
+        { level: 7,  name: 'Eldritch Invocations (5)',type:'Feature',  desc: 'Learn one additional invocation (5 total).' },
+        { level: 8,  name: 'ASI',                    type: 'ASI',      desc: '+2 to one ability score or +1 to two, or a feat.' },
+        { level: 9,  name: 'Eldritch Invocations (6)',type:'Feature',  desc: 'Learn one additional invocation (6 total).' },
+        { level: 10, name: 'Subclass feature',       type: 'Subclass', desc: 'Gain your subclass\'s level 10 feature.' },
+        { level: 11, name: 'Mystic Arcanum (6th)',   type: 'Feature',  desc: 'Cast one 6th-level spell from your patron\'s list once per long rest without expending a slot.' },
+        { level: 12, name: 'ASI',                    type: 'ASI',      desc: '+2 to one ability score or +1 to two, or a feat.' },
+        { level: 12, name: 'Eldritch Invocations (7)',type:'Feature',  desc: 'Learn one additional invocation (7 total).' },
+        { level: 13, name: 'Mystic Arcanum (7th)',   type: 'Feature',  desc: 'Cast one 7th-level spell from your patron\'s list once per long rest.' },
+        { level: 14, name: 'Subclass feature',       type: 'Subclass', desc: 'Gain your subclass\'s level 14 feature.' },
+        { level: 15, name: 'Mystic Arcanum (8th)',   type: 'Feature',  desc: 'Cast one 8th-level spell from your patron\'s list once per long rest.' },
+        { level: 15, name: 'Eldritch Invocations (8)',type:'Feature',  desc: 'Learn one additional invocation (8 total).' },
+        { level: 16, name: 'ASI',                    type: 'ASI',      desc: '+2 to one ability score or +1 to two, or a feat.' },
+        { level: 17, name: 'Mystic Arcanum (9th)',   type: 'Feature',  desc: 'Cast one 9th-level spell from your patron\'s list once per long rest.' },
+        { level: 17, name: 'Eldritch Invocations (9)',type:'Feature',  desc: 'Learn one additional invocation (9 total).' },
+        { level: 18, name: 'Eldritch Invocations (10)',type:'Feature', desc: 'Learn one additional invocation (10 total).' },
+        { level: 19, name: 'ASI',                    type: 'ASI',      desc: '+2 to one ability score or +1 to two, or a feat.' },
+        { level: 20, name: 'Eldritch Master',        type: 'Capstone', desc: 'Spend 1 minute entreating your patron to regain all Pact Magic slots (1/long rest).' },
+      ],
+      spellSlots: 'pact',
+    },
+    {
+      id: 'wizard',
+      name: 'Wizard',
+      color: '#3A3A5C',
+      hitDie: 'd6',
+      primaryAbility: 'Intelligence',
+      savingThrows: ['Intelligence', 'Wisdom'],
+      abilityPriorities: [
+        { priority: 1, ability: 'Intelligence', reason: 'Spellcasting modifier' },
+        { priority: 2, ability: 'Constitution', reason: 'Concentration and HP' },
+        { priority: 3, ability: 'Dexterity',    reason: 'AC and initiative' },
+        { priority: 4, ability: 'Wisdom',       reason: 'Perception and mental saves' },
+        { priority: 5, ability: 'Charisma',     reason: 'Social interactions' },
+      ],
+      resources: [
+        { name: 'Arcane Recovery', formula: (lvl) => `Regain spell slots up to ${Math.ceil(lvl/2)} total levels`, recharge: 'Once per long rest (use on short rest)' },
+        { name: 'Spell slots',     formula: (lvl) => 'Full caster — see slot table',                              recharge: 'Long rest' },
+        { name: 'Prepared spells', formula: (lvl) => 'Int mod + wizard level',                                    recharge: 'Passive' },
+      ],
+      actionEconomy: [
+        { action: 'Arcane Recovery',  type: 'Bonus (short rest)', notes: 'Recover spell slots totaling up to half wizard level (rounded up)' },
+        { action: 'Counterspell',     type: 'Reaction',           notes: 'Auto-counter spells of 3rd level or lower; ability check for higher' },
+        { action: 'Portent',          type: 'Passive replacement',notes: 'Replace any attack roll or save with a pre-rolled die (School of Divination)' },
+      ],
+      subclassLevel: 2,
+      subclassName: 'Arcane Tradition',
+      subclasses: [
+        { name: 'School of Abjuration',    desc: 'Defensive magic; Arcane Ward absorbs damage' },
+        { name: 'School of Conjuration',   desc: 'Summoning and teleportation; minor conjuration at will' },
+        { name: 'School of Divination',    desc: 'Foresight; Portent dice replace any d20 roll' },
+        { name: 'School of Enchantment',   desc: 'Mind control; Hypnotic Gaze, Split Enchantment' },
+        { name: 'School of Evocation',     desc: 'Damage spells; Sculpt Spells protects allies, Empowered Evocation adds Int to damage' },
+        { name: 'School of Illusion',      desc: 'Deception; Improved Minor Illusion, Malleable Illusions' },
+        { name: 'School of Necromancy',    desc: 'Undead command; Grim Harvest, Undead Thralls' },
+        { name: 'School of Transmutation', desc: 'Transformation; Minor Alchemy, Transmuter\'s Stone, Shapechanger' },
+      ],
+      features: [
+        { level: 1,  name: 'Spellcasting',          type: 'Feature',  desc: 'Full caster using Intelligence. Spellbook holds all your spells; prepare Int mod + level each day.' },
+        { level: 1,  name: 'Arcane Recovery',       type: 'Feature',  desc: 'Once per day during a short rest, regain spell slots totaling up to half your wizard level.' },
+        { level: 2,  name: 'Arcane Tradition',      type: 'Subclass', desc: 'Choose your school of magic subclass.' },
+        { level: 4,  name: 'ASI',                   type: 'ASI',      desc: '+2 to one ability score or +1 to two, or a feat.' },
+        { level: 6,  name: 'Subclass feature',      type: 'Subclass', desc: 'Gain your subclass\'s level 6 feature.' },
+        { level: 8,  name: 'ASI',                   type: 'ASI',      desc: '+2 to one ability score or +1 to two, or a feat.' },
+        { level: 10, name: 'Subclass feature',      type: 'Subclass', desc: 'Gain your subclass\'s level 10 feature.' },
+        { level: 12, name: 'ASI',                   type: 'ASI',      desc: '+2 to one ability score or +1 to two, or a feat.' },
+        { level: 14, name: 'Subclass feature',      type: 'Subclass', desc: 'Gain your subclass\'s level 14 feature.' },
+        { level: 16, name: 'ASI',                   type: 'ASI',      desc: '+2 to one ability score or +1 to two, or a feat.' },
+        { level: 18, name: 'Spell Mastery',         type: 'Feature',  desc: 'Choose one 1st and one 2nd level spell; cast them at their lowest level without expending a slot.' },
+        { level: 19, name: 'ASI',                   type: 'ASI',      desc: '+2 to one ability score or +1 to two, or a feat.' },
+        { level: 20, name: 'Signature Spells',      type: 'Capstone', desc: 'Two 3rd-level spells are always prepared and can be cast once each per short rest without a slot.' },
+      ],
+      spellSlots: 'full',
+    },
+  ]
+  
+  export const SPELL_SLOT_TABLE = {
+    full: [
+      [2,0,0,0,0,0,0,0,0],
+      [3,0,0,0,0,0,0,0,0],
+      [4,2,0,0,0,0,0,0,0],
+      [4,3,0,0,0,0,0,0,0],
+      [4,3,2,0,0,0,0,0,0],
+      [4,3,3,0,0,0,0,0,0],
+      [4,3,3,1,0,0,0,0,0],
+      [4,3,3,2,0,0,0,0,0],
+      [4,3,3,3,1,0,0,0,0],
+      [4,3,3,3,2,0,0,0,0],
+      [4,3,3,3,2,1,0,0,0],
+      [4,3,3,3,2,1,0,0,0],
+      [4,3,3,3,2,1,1,0,0],
+      [4,3,3,3,2,1,1,0,0],
+      [4,3,3,3,2,1,1,1,0],
+      [4,3,3,3,2,1,1,1,0],
+      [4,3,3,3,2,1,1,1,1],
+      [4,3,3,3,3,1,1,1,1],
+      [4,3,3,3,3,2,1,1,1],
+      [4,3,3,3,3,2,2,1,1],
+    ],
+    half: [
+      [0,0,0,0,0,0,0,0,0],
+      [2,0,0,0,0,0,0,0,0],
+      [3,0,0,0,0,0,0,0,0],
+      [3,0,0,0,0,0,0,0,0],
+      [4,2,0,0,0,0,0,0,0],
+      [4,2,0,0,0,0,0,0,0],
+      [4,3,0,0,0,0,0,0,0],
+      [4,3,0,0,0,0,0,0,0],
+      [4,3,2,0,0,0,0,0,0],
+      [4,3,2,0,0,0,0,0,0],
+      [4,3,3,0,0,0,0,0,0],
+      [4,3,3,0,0,0,0,0,0],
+      [4,3,3,1,0,0,0,0,0],
+      [4,3,3,1,0,0,0,0,0],
+      [4,3,3,2,0,0,0,0,0],
+      [4,3,3,2,0,0,0,0,0],
+      [4,3,3,3,1,0,0,0,0],
+      [4,3,3,3,1,0,0,0,0],
+      [4,3,3,3,2,0,0,0,0],
+      [4,3,3,3,2,0,0,0,0],
+    ],
+    pact: [
+      [1,0,0,0,0,0,0,0,0],
+      [2,0,0,0,0,0,0,0,0],
+      [0,2,0,0,0,0,0,0,0],
+      [0,2,0,0,0,0,0,0,0],
+      [0,0,2,0,0,0,0,0,0],
+      [0,0,2,0,0,0,0,0,0],
+      [0,0,0,2,0,0,0,0,0],
+      [0,0,0,2,0,0,0,0,0],
+      [0,0,0,0,2,0,0,0,0],
+      [0,0,0,0,2,0,0,0,0],
+      [0,0,0,0,3,0,0,0,0],
+      [0,0,0,0,3,0,0,0,0],
+      [0,0,0,0,3,0,0,0,0],
+      [0,0,0,0,3,0,0,0,0],
+      [0,0,0,0,3,0,0,0,0],
+      [0,0,0,0,3,0,0,0,0],
+      [0,0,0,0,4,0,0,0,0],
+      [0,0,0,0,4,0,0,0,0],
+      [0,0,0,0,4,0,0,0,0],
+      [0,0,0,0,4,0,0,0,0],
+    ],
+  }
