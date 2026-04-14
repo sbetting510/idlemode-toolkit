@@ -71,11 +71,18 @@ export default function Spells({ searchTerm }) {
   })
 
   const filterSelect = {
-    background: 'rgba(255,255,255,0.06)',
+    background: '#16213e',
     border: '1px solid var(--border2)',
-    borderRadius: 5, color: 'var(--parch)',
-    fontFamily: 'Georgia, serif', fontSize: 12,
-    padding: '5px 8px', outline: 'none', cursor: 'pointer',
+    borderRadius: 5,
+    color: '#f5f0e1',
+    fontFamily: 'Georgia, serif',
+    fontSize: 12,
+    padding: '5px 8px',
+    outline: 'none',
+    cursor: 'pointer',
+    minWidth: 110,
+    appearance: 'none',
+    WebkitAppearance: 'none',
   }
 
   const toggleBtn = (active) => ({
@@ -94,16 +101,20 @@ export default function Spells({ searchTerm }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
           <span style={{ fontSize: 10, color: 'var(--muted)', fontFamily: 'sans-serif', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Level</span>
           <select style={filterSelect} value={levelFilter} onChange={e => setLevelFilter(e.target.value)}>
-            <option value="All">All levels</option>
-            <option value="0">Cantrip</option>
-            {[1,2,3,4,5,6,7,8,9].map(l => <option key={l} value={l}>Level {l}</option>)}
+            <option value="All" style={{ background: '#16213e', color: '#f5f0e1' }}>All levels</option>
+            <option value="0"   style={{ background: '#16213e', color: '#f5f0e1' }}>Cantrip</option>
+            {[1,2,3,4,5,6,7,8,9].map(l => (
+              <option key={l} value={l} style={{ background: '#16213e', color: '#f5f0e1' }}>Level {l}</option>
+            ))}
           </select>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
           <span style={{ fontSize: 10, color: 'var(--muted)', fontFamily: 'sans-serif', letterSpacing: '0.05em', textTransform: 'uppercase' }}>School</span>
           <select style={filterSelect} value={schoolFilter} onChange={e => setSchoolFilter(e.target.value)}>
-            <option value="All">All schools</option>
-            {SCHOOLS.map(s => <option key={s} value={s}>{s}</option>)}
+            <option value="All" style={{ background: '#16213e', color: '#f5f0e1' }}>All schools</option>
+            {SCHOOLS.map(s => (
+              <option key={s} value={s} style={{ background: '#16213e', color: '#f5f0e1' }}>{s}</option>
+          ))}
           </select>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 3, justifyContent: 'flex-end' }}>

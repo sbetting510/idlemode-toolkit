@@ -62,11 +62,17 @@ function hl(text, term) {
 }
 
 const filterSelect = {
-  background:'rgba(255,255,255,0.06)',
-  border:'1px solid var(--border2)',
-  borderRadius:5, color:'var(--parch)',
-  fontFamily:'Georgia, serif', fontSize:12,
-  padding:'5px 8px', outline:'none', cursor:'pointer',
+  background: '#16213e',
+  border: '1px solid var(--border2)',
+  borderRadius: 5,
+  color: '#f5f0e1',
+  fontFamily: 'Georgia, serif',
+  fontSize: 12,
+  padding: '5px 8px',
+  outline: 'none',
+  cursor: 'pointer',
+  appearance: 'none',
+  WebkitAppearance: 'none',
 }
 
 export default function Monsters({ searchTerm, onAddToEncounter }) {
@@ -99,22 +105,28 @@ export default function Monsters({ searchTerm, onAddToEncounter }) {
         <div style={{ display:'flex', flexDirection:'column', gap:3 }}>
           <span style={{ fontSize:10, color:'var(--muted)', fontFamily:'sans-serif', letterSpacing:'0.05em', textTransform:'uppercase' }}>Type</span>
           <select style={filterSelect} value={typeFilter} onChange={e => setTypeFilter(e.target.value)}>
-            <option value="All">All types</option>
-            {TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+            <option value="All" style={{ background: '#16213e', color: '#f5f0e1' }}>All types</option>
+            {TYPES.map(t => (
+              <option key={t} value={t} style={{ background: '#16213e', color: '#f5f0e1' }}>{t}</option>
+          ))}
           </select>
         </div>
         <div style={{ display:'flex', flexDirection:'column', gap:3 }}>
           <span style={{ fontSize:10, color:'var(--muted)', fontFamily:'sans-serif', letterSpacing:'0.05em', textTransform:'uppercase' }}>Size</span>
           <select style={filterSelect} value={sizeFilter} onChange={e => setSizeFilter(e.target.value)}>
-            <option value="All">All sizes</option>
-            {SIZES.map(s => <option key={s} value={s}>{s}</option>)}
+            <option value="All" style={{ background: '#16213e', color: '#f5f0e1' }}>All sizes</option>
+              {SIZES.map(s => (
+                <option key={s} value={s} style={{ background: '#16213e', color: '#f5f0e1' }}>{s}</option>
+              ))}
           </select>
         </div>
         <div style={{ display:'flex', flexDirection:'column', gap:3 }}>
           <span style={{ fontSize:10, color:'var(--muted)', fontFamily:'sans-serif', letterSpacing:'0.05em', textTransform:'uppercase' }}>CR</span>
           <select style={{ ...filterSelect, minWidth:90 }} value={crFilter} onChange={e => setCrFilter(e.target.value)}>
-            <option value="All">All CRs</option>
-            {ALL_CRS.map(c => <option key={c} value={c}>CR {crLabel(c)}</option>)}
+            <option value="All" style={{ background: '#16213e', color: '#f5f0e1' }}>All CRs</option>
+            {ALL_CRS.map(c => (
+              <option key={c} value={c} style={{ background: '#16213e', color: '#f5f0e1' }}>CR {crLabel(c)}</option>
+            ))}
           </select>
         </div>
         <span style={{ fontSize:12, color:'var(--muted)', fontFamily:'sans-serif', marginLeft:'auto', alignSelf:'flex-end', paddingBottom:2 }}>
