@@ -1,6 +1,6 @@
 import { useLicense }  from './hooks/useLicense'
 import UnlockModal     from './components/ui/UnlockModal'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import './styles/globals.css'
 import Conditions  from './components/tabs/Conditions'
 import Actions     from './components/tabs/Actions'
@@ -31,6 +31,17 @@ export default function App() {
   const [showModal, setShowModal] = useState(false)
 
   const activeTab = TABS.find(t => t.id === currentTab)
+
+  useEffect(() => {
+    function handleKeyDown(e) {
+      // Ctrl+Shift+R resets the license (dev/support tool)
+      if (e.ctrlKey && e.shiftKey && e.key === 'R') {
+        revoke()
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
 
   function goTab(id) {
     const tab = TABS.find(t => t.id === id)
