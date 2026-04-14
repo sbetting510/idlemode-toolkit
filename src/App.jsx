@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import './styles/globals.css'
-import Conditions from './components/tabs/Conditions'
-import Actions from './components/tabs/Actions'
+import Conditions  from './components/tabs/Conditions'
+import Actions     from './components/tabs/Actions'
 import CombatRules from './components/tabs/CombatRules'
-import SavesDCs from './components/tabs/SavesDCs'
-import Spells from './components/tabs/Spells'
+import SavesDCs    from './components/tabs/SavesDCs'
+import Spells      from './components/tabs/Spells'
+import Monsters    from './components/tabs/Monsters'
 
 const TABS = [
   { id: 'conditions',  label: 'Conditions',     paid: false },
@@ -20,8 +21,20 @@ export default function App() {
   const [currentTab, setCurrentTab] = useState('conditions')
   const [searchTerm, setSearchTerm] = useState('')
   const [menuOpen, setMenuOpen] = useState(false)
+  const [encounter, setEncounter] = useState([])
+  const [partySize, setPartySize] = useState(4)
+  const [partyLevel, setPartyLevel] = useState(5)
 
   const activeTab = TABS.find(t => t.id === currentTab)
+
+  function addToEncounter(name, cr) {
+    setEncounter(prev => {
+      const existing = prev.find(e => e.name === name)
+      if (existing) return prev.map(e => e.name === name ? { ...e, qty: e.qty + 1 } : e)
+      return [...prev, { name, cr, qty: 1 }]
+    })
+    setCurrentTab('encounter')
+  }
 
   function goTab(id) {
     setCurrentTab(id)
@@ -219,15 +232,21 @@ export default function App() {
 
       {/* ── Tab content ── */}
       <main style={{ padding: '1rem 1.25rem' }}>
-        {currentTab === 'conditions'   && <Conditions  searchTerm={searchTerm} />}
-        {currentTab === 'actions'      && <Actions     searchTerm={searchTerm} />}
-        {currentTab === 'combat'       && <CombatRules searchTerm={searchTerm} />}
-        {currentTab === 'saves'        && <SavesDCs    searchTerm={searchTerm} />}
-        {currentTab === 'spells'       && <Spells      searchTerm={searchTerm} />}
-        {!['conditions','actions','combat','saves','spells'].includes(currentTab) && (
+        {currentTab === 'conditions' && <Conditions  searchTerm={searchTerm} />}
+        {currentTab === 'actions'    && <Actions     searchTerm={searchTerm} />}
+        {currentTab === 'combat'     && <CombatRules searchTerm={searchTerm} />}
+        {currentTab === 'saves'      && <SavesDCs    searchTerm={searchTerm} />}
+        {currentTab === 'spells'     && <Spells      searchTerm={searchTerm} />}
+        {currentTab === 'monsters'   && (
+          <Monsters    
+            searchTerm={searchTerm} 
+            onAddToEncounter={addToEncounter} 
+          />
+        )}
+        {!['conditions','actions','combat','saves','spells','monsters'].includes(currentTab) && (
           <p style={{ color: 'var(--muted)', fontStyle: 'italic', fontSize: 14 }}>
-            {activeTab.label} — coming soon.
-          </p>
+          {activeTab.label} — coming soon.
+        </p>
         )}
       </main>
 
