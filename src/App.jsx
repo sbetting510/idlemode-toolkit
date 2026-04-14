@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import './styles/globals.css'
 import Conditions from './components/tabs/Conditions'
+import Actions from './components/tabs/Actions'
 
 const TABS = [
   { id: 'conditions',  label: 'Conditions',     paid: false },
@@ -216,9 +217,10 @@ export default function App() {
       {/* ── Tab content ── */}
       <main style={{ padding: '1rem 1.25rem' }}>
         {currentTab === 'conditions' && <Conditions searchTerm={searchTerm} />}
-        {currentTab !== 'conditions' && (
+        {currentTab === 'actions'    && <Actions    searchTerm={searchTerm} />}
+        {currentTab !== 'conditions' && currentTab !== 'actions' && (
           <p style={{ color: 'var(--muted)', fontStyle: 'italic', fontSize: 14 }}>
-            {activeTab.label} — coming soon.
+            {currentTab.label} — coming soon.
           </p>
         )}
       </main>
