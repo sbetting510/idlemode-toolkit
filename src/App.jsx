@@ -6,6 +6,7 @@ import CombatRules from './components/tabs/CombatRules'
 import SavesDCs    from './components/tabs/SavesDCs'
 import Spells      from './components/tabs/Spells'
 import Monsters    from './components/tabs/Monsters'
+import EncounterCalc from './components/tabs/EncounterCalc'
 
 const TABS = [
   { id: 'conditions',  label: 'Conditions',     paid: false },
@@ -34,6 +35,21 @@ export default function App() {
       return [...prev, { name, cr, qty: 1 }]
     })
     setCurrentTab('encounter')
+  }
+
+  function changeQty(name, cr, delta, forceAdd = false) {
+    setEncounter(prev => {
+      const existing = prev.find(e => e.name === name)
+      if (forceAdd && !existing) return [...prev, { name, cr, qty: 1 }]
+      if (!existing) return prev
+      const newQty = existing.qty + delta
+      if (newQty <= 0) return prev.filter(e => e.name !== name)
+      return prev.map(e => e.name === name ? { ...e, qty: newQty } : e)
+    })
+  }
+  
+  function removeMonster(name) {
+    setEncounter(prev => prev.filter(e => e.name !== name))
   }
 
   function goTab(id) {
@@ -243,10 +259,17 @@ export default function App() {
             onAddToEncounter={addToEncounter} 
           />
         )}
-        {!['conditions','actions','combat','saves','spells','monsters'].includes(currentTab) && (
-          <p style={{ color: 'var(--muted)', fontStyle: 'italic', fontSize: 14 }}>
-          {activeTab.label} — coming soon.
-        </p>
+        {currentTab === 'encounter'  && (
+          <EncounterCalc 
+            encounter={encounter} 
+            partySize={partySize} 
+            partyLevel={partyLevel} 
+            onPartySize={setPartySize} 
+            onPartyLevel={setPartyLevel} 
+            onChangeQty={changeQty} 
+            onRemove={removeMonster} 
+            onClear={() => setEncounter([])}
+          />
         )}
       </main>
 
