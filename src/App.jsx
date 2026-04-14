@@ -4,6 +4,7 @@ import Conditions from './components/tabs/Conditions'
 import Actions from './components/tabs/Actions'
 import CombatRules from './components/tabs/CombatRules'
 import SavesDCs from './components/tabs/SavesDCs'
+import Spells from './components/tabs/Spells'
 
 const TABS = [
   { id: 'conditions',  label: 'Conditions',     paid: false },
@@ -222,7 +223,8 @@ export default function App() {
         {currentTab === 'actions'      && <Actions     searchTerm={searchTerm} />}
         {currentTab === 'combat'       && <CombatRules searchTerm={searchTerm} />}
         {currentTab === 'saves'        && <SavesDCs    searchTerm={searchTerm} />}
-        {!['conditions','actions','combat','saves'].includes(currentTab) && (
+        {currentTab === 'spells'       && <Spells      searchTerm={searchTerm} />}
+        {!['conditions','actions','combat','saves','spells'].includes(currentTab) && (
           <p style={{ color: 'var(--muted)', fontStyle: 'italic', fontSize: 14 }}>
             {activeTab.label} — coming soon.
           </p>
