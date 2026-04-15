@@ -1,3 +1,6 @@
+import { useVersion }  from '../../context/VersionContext'
+import VersionBadge    from '../ui/VersionBadge'
+
 const CONDITIONS = [
     { name: 'Blinded', sev: 'red', effects: "Can't see. Attacks against you have advantage. Your attacks have disadvantage. Auto-fail checks requiring sight.", ends: 'Magical healing, spell end, or source removed.' },
     { name: 'Charmed', sev: 'amber', effects: "Can't attack or target the charmer with harmful abilities. Charmer has advantage on Charisma checks against you.", ends: 'Saving throw, harm from charmer, or spell end.' },
@@ -14,7 +17,7 @@ const CONDITIONS = [
     { name: 'Stunned', sev: 'red', effects: "Incapacitated. Can't move. Can only speak falteringly. Auto-fail Str/Dex saves. Attacks have advantage.", ends: 'Saving throw or spell end.' },
     { name: 'Unconscious', sev: 'red', effects: "Incapacitated, can't move or speak. Drop held items, fall prone. Auto-fail Str/Dex saves. Melee within 5 ft are auto-crits.", ends: 'Regaining HP or being stabilized.' },
   ]
-  
+
   const EXHAUSTION = [
     { level: 'Level 1', effect: 'Disadvantage on ability checks' },
     { level: 'Level 2', effect: 'Speed halved' },
@@ -23,7 +26,7 @@ const CONDITIONS = [
     { level: 'Level 5', effect: 'Speed reduced to 0' },
     { level: 'Level 6', effect: 'Death' },
   ]
-  
+
   const SEV_BADGE = {
     red:    { bg: 'rgba(139,0,0,0.4)',     color: '#ff9999', border: 'rgba(139,0,0,0.6)',     label: 'Severe'   },
     amber:  { bg: 'rgba(180,120,0,0.35)',  color: '#f5c842', border: 'rgba(180,120,0,0.5)',   label: 'Moderate' },
@@ -31,7 +34,7 @@ const CONDITIONS = [
     blue:   { bg: 'rgba(20,60,140,0.4)',   color: '#90b8f8', border: 'rgba(20,60,140,0.6)',   label: 'Sensory'  },
     purple: { bg: 'rgba(80,20,120,0.4)',   color: '#d090f8', border: 'rgba(80,20,120,0.6)',   label: 'Stealth'  },
   }
-  
+
   function Badge({ sev }) {
     const s = SEV_BADGE[sev]
     return (
@@ -44,7 +47,7 @@ const CONDITIONS = [
       }}>{s.label}</span>
     )
   }
-  
+
   function hl(text, term) {
     if (!term) return text
     const re = new RegExp(`(${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi')
@@ -53,8 +56,8 @@ const CONDITIONS = [
       re.test(part) ? <mark key={i}>{part}</mark> : part
     )
   }
-  
-  function SectionHeader({ title, count, total }) {
+
+  function SectionHeader({ title, count, total, children }) {
     return (
       <div style={{
         display: 'flex', alignItems: 'center', gap: 8,
@@ -64,24 +67,51 @@ const CONDITIONS = [
         <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--gold)', flexShrink: 0 }} />
         <span style={{ fontSize: 13, fontWeight: 'bold', color: 'var(--gold)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>{title}</span>
         {count !== undefined && (
-          <span style={{ fontSize: 11, color: 'var(--muted)', marginLeft: 'auto', fontFamily: 'sans-serif' }}>{count} / {total}</span>
+          <span style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'sans-serif' }}>{count} / {total}</span>
         )}
+        {children && <span style={{ marginLeft: 'auto' }}>{children}</span>}
       </div>
     )
   }
-  
+
   export default function Conditions({ searchTerm }) {
+    const { getTabVersion } = useVersion()
+    const version = getTabVersion('conditions')
+
     const filtered = CONDITIONS.filter(c =>
       !searchTerm || [c.name, c.effects, c.ends].some(v => v.toLowerCase().includes(searchTerm.toLowerCase()))
     )
     const exFiltered = EXHAUSTION.filter(e =>
       !searchTerm || [e.level, e.effect].some(v => v.toLowerCase().includes(searchTerm.toLowerCase()))
     )
-  
+
     return (
       <div>
-        <SectionHeader title="Status conditions" count={filtered.length} total={CONDITIONS.length} />
-  
+        <SectionHeader title="Status conditions" count={filtered.length} total={CONDITIONS.length}>
+          <VersionBadge tabId="conditions" />
+        </SectionHeader>
+
+        {/* 2024 placeholder notice */}
+        {version === '2024' && (
+          <div style={{
+            display: 'flex', alignItems: 'flex-start', gap: 10,
+            padding: '10px 14px', marginBottom: '1rem',
+            background: 'rgba(180,120,0,0.12)',
+            border: '1px solid rgba(180,120,0,0.4)',
+            borderRadius: 6,
+          }}>
+            <span style={{ fontSize: 16, flexShrink: 0, lineHeight: 1.4 }}>⚠</span>
+            <div>
+              <span style={{ fontSize: 13, color: '#f5c842', fontWeight: 'bold' }}>
+                2024 rules coming soon
+              </span>
+              <span style={{ fontSize: 13, color: 'var(--parch2)', marginLeft: 6 }}>
+                — showing 2014 (SRD 5.1) data for now.
+              </span>
+            </div>
+          </div>
+        )}
+
         {filtered.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--muted)', fontStyle: 'italic' }}>
             No conditions match &ldquo;{searchTerm}&rdquo;
@@ -114,7 +144,7 @@ const CONDITIONS = [
             </table>
           </div>
         )}
-  
+
         {exFiltered.length > 0 && (
           <>
             <SectionHeader title="Exhaustion levels" />
