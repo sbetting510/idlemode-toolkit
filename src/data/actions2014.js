@@ -1,0 +1,16 @@
+export const ACTIONS_2014 = [
+  { name: 'Action',        type: 'action',   desc: 'Attack, cast a spell, dash, disengage, dodge, help, hide, ready, search, or use an object. One per turn unless a feature grants more.', notes: 'One per turn' },
+  { name: 'Bonus action',  type: 'bonus',    desc: 'Requires a class feature, spell, or item that specifically uses a bonus action. One per turn.',                                          notes: 'Requires a feature' },
+  { name: 'Reaction',      type: 'reaction', desc: 'Triggered by a specific event (e.g. opportunity attack, Shield spell). Resets at start of your turn.',                                  notes: 'Resets each turn' },
+  { name: 'Free action',   type: 'free',     desc: 'Drop an item, speak a few words, open an unlocked door, draw a weapon as part of an attack.',                                          notes: 'No cost' },
+  { name: 'Move',          type: 'move',     desc: 'Move up to your speed. You can split movement before and after your action.',                                                           notes: 'Up to your speed' },
+  { name: 'Dash',          type: 'action',   desc: 'Gain extra movement equal to your speed this turn.',                                                                                   notes: 'Uses Action' },
+  { name: 'Disengage',     type: 'action',   desc: "Your movement doesn't provoke opportunity attacks for the rest of the turn.",                                                           notes: 'Uses Action' },
+  { name: 'Dodge',         type: 'action',   desc: 'Until your next turn, attacks against you have disadvantage (if you can see the attacker) and you have advantage on Dex saves.',       notes: 'Uses Action' },
+  { name: 'Help',          type: 'action',   desc: 'Give an adjacent ally advantage on their next ability check or attack roll against a creature within 5 ft.',                           notes: 'Uses Action' },
+  { name: 'Hide',          type: 'action',   desc: "Attempt a Stealth check. On success you are hidden; creatures can't target you unless they find you.",                                  notes: 'Uses Action' },
+  { name: 'Ready',         type: 'action',   desc: 'Declare a trigger and a reaction. When triggered, you can use your reaction to perform the readied action.',                           notes: 'Uses Action' },
+  { name: 'Opportunity attack', type: 'reaction', desc: 'When a hostile creature you can see moves out of your reach, use your reaction to make one melee attack.',                       notes: 'Reaction trigger' },
+  { name: 'Stand up (prone)',   type: 'move',     desc: 'Costs half your movement speed to stand up from prone.',                                                                          notes: 'Costs half move' },
+  { name: 'Offhand attack',     type: 'bonus',    desc: "When you Attack with a light melee weapon, use a bonus action to attack with a second light melee weapon. Don't add ability mod to damage unless negative.", notes: 'Two-Weapon Fighting' },
+]
