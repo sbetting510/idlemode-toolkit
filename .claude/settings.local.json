@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:5e24srd.com)",
+      "WebSearch",
+      "WebFetch(domain:www.kassoon.com)",
+      "WebFetch(domain:www.dndbeyond.com)",
+      "WebFetch(domain:www.wargamer.com)",
+      "WebFetch(domain:dicedungeons.com)",
+      "WebFetch(domain:www.dexerto.com)",
+      "WebFetch(domain:beforeyouroll.com)",
+      "WebFetch(domain:www.aidedd.org)",
+      "WebFetch(domain:dnd2024.wikidot.com)",
+      "WebFetch(domain:screenrant.com)",
+      "WebFetch(domain:gamerant.com)",
+      "WebFetch(domain:dungeonmister.com)",
+      "Bash(npm run *)"
+    ]
+  }
+}

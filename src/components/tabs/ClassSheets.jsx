@@ -1,5 +1,8 @@
 import { useState } from 'react'
-import { CLASSES, SPELL_SLOT_TABLE } from '../../data/classes'
+import { useVersion }    from '../../context/VersionContext'
+import VersionBadge      from '../ui/VersionBadge'
+import { CLASSES as CLASSES_2014, SPELL_SLOT_TABLE } from '../../data/classes'
+import { CLASSES_2024 }  from '../../data/classes2024'
 
 const TYPE_COLORS = {
   Feature:  { color: 'var(--parch2)', dot: 'var(--gold)'    },
@@ -12,11 +15,11 @@ function profBonus(level) {
   return level <= 4 ? 2 : level <= 8 ? 3 : level <= 12 ? 4 : level <= 16 ? 5 : 6
 }
 
-function ClassSelector({ classes, selected, onSelect }) {
+function ClassSelector({ classes, selected, onSelect, noMargin }) {
   return (
     <div style={{
       display: 'flex', flexWrap: 'wrap', gap: 6,
-      marginBottom: '1rem',
+      marginBottom: noMargin ? 0 : '1rem',
     }}>
       {classes.map(cls => (
         <button
@@ -90,8 +93,13 @@ function SpellSlotTable({ type, level }) {
 }
 
 export default function ClassSheets({ searchTerm }) {
+  const { getTabVersion } = useVersion()
+  const version = getTabVersion('classes')
+
   const [selectedClass, setSelectedClass] = useState('barbarian')
   const [level, setLevel] = useState(1)
+
+  const CLASSES = version === '2024' ? CLASSES_2024 : CLASSES_2014
 
   const cls = CLASSES.find(c => c.id === selectedClass)
   if (!cls) return null
@@ -104,11 +112,15 @@ export default function ClassSheets({ searchTerm }) {
   return (
     <div>
       {/* Class selector */}
-      <ClassSelector
-        classes={CLASSES}
-        selected={selectedClass}
-        onSelect={(id) => { setSelectedClass(id); setLevel(1) }}
-      />
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, marginBottom: '1rem' }}>
+        <ClassSelector
+          classes={CLASSES}
+          selected={selectedClass}
+          onSelect={(id) => { setSelectedClass(id); setLevel(1) }}
+          noMargin
+        />
+        <VersionBadge tabId="classes" />
+      </div>
 
       {/* Class header */}
       <div style={{

@@ -1,5 +1,8 @@
 import { useState } from 'react'
-import { SPELLS } from '../../data/spells'
+import { useVersion }  from '../../context/VersionContext'
+import VersionBadge    from '../ui/VersionBadge'
+import { SPELLS as SPELLS_2014 } from '../../data/spells'
+import { SPELLS_2024 }           from '../../data/spells2024'
 
 const SCHOOLS = ["Abjuration","Conjuration","Divination","Enchantment","Evocation","Illusion","Necromancy","Transmutation"]
 
@@ -53,10 +56,15 @@ function hl(text, term) {
 }
 
 export default function Spells({ searchTerm }) {
+  const { getTabVersion } = useVersion()
+  const version = getTabVersion('spells')
+
   const [levelFilter, setLevelFilter]   = useState('All')
   const [schoolFilter, setSchoolFilter] = useState('All')
   const [concOnly, setConcOnly]         = useState(false)
   const [ritualOnly, setRitualOnly]     = useState(false)
+
+  const SPELLS = version === '2024' ? SPELLS_2024 : SPELLS_2014
 
   const filtered = SPELLS.filter(s => {
     const [name, lvl, school,,,, conc,, ritual, desc] = s
@@ -125,9 +133,12 @@ export default function Spells({ searchTerm }) {
           <span style={{ fontSize: 10, color: 'var(--muted)', fontFamily: 'sans-serif', letterSpacing: '0.05em', textTransform: 'uppercase' }}>&nbsp;</span>
           <button style={toggleBtn(ritualOnly)} onClick={() => setRitualOnly(!ritualOnly)}>Ritual</button>
         </div>
-        <span style={{ fontSize: 12, color: 'var(--muted)', fontFamily: 'sans-serif', marginLeft: 'auto', alignSelf: 'flex-end', paddingBottom: 2 }}>
-          {filtered.length} spell{filtered.length !== 1 ? 's' : ''}
-        </span>
+        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, marginLeft: 'auto' }}>
+          <span style={{ fontSize: 12, color: 'var(--muted)', fontFamily: 'sans-serif', paddingBottom: 2 }}>
+            {filtered.length} spell{filtered.length !== 1 ? 's' : ''}
+          </span>
+          <VersionBadge tabId="spells" />
+        </div>
       </div>
 
       {filtered.length === 0 ? (
