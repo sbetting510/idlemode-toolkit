@@ -268,6 +268,10 @@ function Characters({ campaign, module }) {
 
   function cancel() { setAdding(false); setEditing(null); setForm(blank) }
 
+  return (
+    <div>
+      <SectionHeader title="Characters" onAdd={() => { setAdding(true); setEditing(null); setForm(blank) }} />
+
   {(adding || editing) && (
     <div style={{ ...cardStyle, borderLeft: '3px solid var(--gold)', marginBottom: '1rem' }}>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
@@ -292,9 +296,6 @@ function Characters({ campaign, module }) {
     </div>
   )}
 
-  return (
-    <div>
-      <SectionHeader title="Characters" onAdd={() => { setAdding(true); setEditing(null); setForm(blank) }} />
       {campaign.characters.length === 0 && !adding
         ? <EmptyState message="No characters yet. Add your party members above." />
         : campaign.characters.map(c => {
@@ -359,6 +360,12 @@ function Sessions({ campaign, module }) {
 
   function cancel() { setAdding(false); setEditing(null) }
 
+  const sorted = [...campaign.sessions].sort((a,b) => (b.number||0) - (a.number||0))
+
+  return (
+    <div>
+      <SectionHeader title="Sessions" onAdd={() => { setAdding(true); setEditing(null) }} addLabel="+ Log session" />
+
   {(adding || editing) && (
     <div style={{ ...cardStyle, borderLeft:'3px solid var(--gold)', marginBottom:'1rem' }}>
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:8 }}>
@@ -380,11 +387,6 @@ function Sessions({ campaign, module }) {
     </div>
   )}
 
-  const sorted = [...campaign.sessions].sort((a,b) => (b.number||0) - (a.number||0))
-
-  return (
-    <div>
-      <SectionHeader title="Sessions" onAdd={() => { setAdding(true); setEditing(null) }} addLabel="+ Log session" />
       {campaign.sessions.length === 0 && !adding
         ? <EmptyState message="No sessions logged yet. Record your first session above." />
         : sorted.map(s => (
@@ -435,6 +437,10 @@ function Encounters({ campaign, module }) {
 
   function cancel() { setAdding(false); setEditing(null) }
 
+  return (
+    <div>
+      <SectionHeader title="Encounters" onAdd={() => { setAdding(true); setEditing(null) }} />
+
   {(adding || editing) && (
     <div style={{ ...cardStyle, borderLeft:'3px solid var(--gold)', marginBottom:'1rem' }}>
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:8 }}>
@@ -459,9 +465,6 @@ function Encounters({ campaign, module }) {
     </div>
   )}
 
-  return (
-    <div>
-      <SectionHeader title="Encounters" onAdd={() => { setAdding(true); setEditing(null) }} />
       {campaign.encounters.length === 0 && !adding
         ? <EmptyState message="No encounters logged yet." />
         : campaign.encounters.map(e => (
@@ -509,6 +512,10 @@ function Loot({ campaign, module }) {
 
   function cancel() { setAdding(false); setEditing(null) }
 
+  return (
+    <div>
+      <SectionHeader title="Loot" onAdd={() => { setAdding(true); setEditing(null) }} addLabel="+ Add item" />
+
   {(adding || editing) && (
     <div style={{ ...cardStyle, borderLeft:'3px solid var(--gold)', marginBottom:'1rem' }}>
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:8 }}>
@@ -534,9 +541,6 @@ function Loot({ campaign, module }) {
     </div>
   )}
 
-  return (
-    <div>
-      <SectionHeader title="Loot" onAdd={() => { setAdding(true); setEditing(null) }} addLabel="+ Add item" />
       {campaign.loot.length === 0 && !adding
         ? <EmptyState message="No loot tracked yet. Add items as your party finds them." />
         : campaign.loot.map(item => (
@@ -585,6 +589,10 @@ function NPCs({ campaign, module }) {
 
   function cancel() { setAdding(false); setEditing(null) }
 
+  return (
+    <div>
+      <SectionHeader title="NPCs" onAdd={() => { setAdding(true); setEditing(null) }} addLabel="+ Add NPC" />
+
   {(adding || editing) && (
     <div style={{ ...cardStyle, borderLeft:'3px solid var(--gold)', marginBottom:'1rem' }}>
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:8 }}>
@@ -612,9 +620,6 @@ function NPCs({ campaign, module }) {
     </div>
   )}
 
-  return (
-    <div>
-      <SectionHeader title="NPCs" onAdd={() => { setAdding(true); setEditing(null) }} addLabel="+ Add NPC" />
       {campaign.npcs.length === 0 && !adding
         ? <EmptyState message="No NPCs tracked yet. Add key characters your party has met." />
         : campaign.npcs.map(n => (
@@ -664,6 +669,15 @@ function Quests({ campaign, module }) {
 
   function cancel() { setAdding(false); setEditing(null) }
 
+  const sorted = [...campaign.quests].sort((a,b) => {
+    const order = { Critical:0, High:1, Medium:2, Low:3 }
+    return (order[a.priority]||2) - (order[b.priority]||2)
+  })
+
+  return (
+    <div>
+      <SectionHeader title="Quests" onAdd={() => { setAdding(true); setEditing(null) }} addLabel="+ Add quest" />
+
   {(adding || editing) && (
     <div style={{ ...cardStyle, borderLeft:'3px solid var(--gold)', marginBottom:'1rem' }}>
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:8 }}>
@@ -689,14 +703,6 @@ function Quests({ campaign, module }) {
     </div>
   )}
 
-  const sorted = [...campaign.quests].sort((a,b) => {
-    const order = { Critical:0, High:1, Medium:2, Low:3 }
-    return (order[a.priority]||2) - (order[b.priority]||2)
-  })
-
-  return (
-    <div>
-      <SectionHeader title="Quests" onAdd={() => { setAdding(true); setEditing(null) }} addLabel="+ Add quest" />
       {campaign.quests.length === 0 && !adding
         ? <EmptyState message="No quests tracked yet. Add your party's active quests above." />
         : sorted.map(q => (
