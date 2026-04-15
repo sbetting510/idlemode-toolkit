@@ -92,7 +92,6 @@ export default function App() {
     setCurrentTab(id)
     setMenuOpen(false)
     setSearchTerm('')
-    document.getElementById('search-input')?.focus()
   }
 
   return (
