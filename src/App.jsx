@@ -11,6 +11,7 @@ import Monsters    from './components/tabs/Monsters'
 import EncounterCalc from './components/tabs/EncounterCalc'
 import ClassSheets from './components/tabs/ClassSheets'
 import CampaignManager from './components/tabs/CampaignManager'
+import DiceRoller     from './components/tabs/DiceRoller'
 
 const TABS = [
   { id: 'conditions',  label: 'Conditions',     paid: false },
@@ -19,6 +20,7 @@ const TABS = [
   { id: 'saves',       label: 'Saves & DCs',     paid: false },
   { id: 'spells',      label: 'Spells',          paid: false },
   { id: 'classes',     label: 'Class Sheets',    paid: false },
+  { id: 'dice',        label: 'Dice Roller',     paid: false },
   { id: 'monsters',    label: 'Monsters',        paid: false },
   { id: 'encounter',   label: 'Encounter Calc',  paid: true  },
   { id: 'campaign',    label: 'Campaign Manager', paid: true  },
@@ -294,6 +296,7 @@ export default function App() {
         {currentTab === 'saves'      && <SavesDCs    searchTerm={searchTerm} />}
         {currentTab === 'spells'     && <Spells      searchTerm={searchTerm} />}
         {currentTab === 'classes'    && <ClassSheets searchTerm={searchTerm} />}
+        {currentTab === 'dice'       && <DiceRoller />}
         {currentTab === 'monsters'   && (
           <Monsters    
             searchTerm={searchTerm} 
