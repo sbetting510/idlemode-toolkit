@@ -96,7 +96,7 @@ export default function App() {
   }
 
   return (
-    <div style={{ maxWidth: 960, margin: '0 auto', paddingBottom: '2rem' }}>
+    <div style={{ maxWidth: 1400, margin: '0 auto', paddingBottom: '2rem' }}>
 
       {/* ── Header ── */}
       <header style={{
@@ -160,11 +160,12 @@ export default function App() {
 
       {/* ── Desktop nav ── */}
       <nav style={{
-        display: 'flex', gap: 2,
+        display: 'flex',
+        flexWrap: 'wrap',
+        gap: 2,
         padding: '0.6rem 1.25rem 0',
         borderBottom: '1px solid var(--border)',
         background: 'var(--stone2)',
-        overflowX: 'auto',
       }} className="nav-desktop">
         {TABS.map(tab => (
           <button
