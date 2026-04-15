@@ -67,7 +67,7 @@ export default function UnlockModal({ onUnlock, onClose }) {
           </h2>
           <p style={{ fontSize: 14, color: 'var(--parch2)', lineHeight: 1.6 }}>
             Enter your license key to unlock the Encounter Calculator
-            and all future paid features.
+            and Campaign Manager.
           </p>
         </div>
 
@@ -80,9 +80,7 @@ export default function UnlockModal({ onUnlock, onClose }) {
         }}>
           {[
             '⚔️  Encounter Calculator — build & balance encounters',
-            '🧙  Class Cheat Sheets — level-aware reference',
             '📋  Campaign Manager — full campaign tracking',
-            '✦   All future paid features',
           ].map(item => (
             <div key={item} style={{
               fontSize: 13, color: 'var(--parch2)',
