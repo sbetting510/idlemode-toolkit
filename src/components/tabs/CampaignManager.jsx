@@ -268,7 +268,7 @@ function Characters({ campaign, module }) {
 
   function cancel() { setAdding(false); setEditing(null); setForm(blank) }
 
-  const FormPanel = () => (
+  {(adding || editing) && (
     <div style={{ ...cardStyle, borderLeft: '3px solid var(--gold)', marginBottom: '1rem' }}>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
         <Field label="Name *"><input style={inputStyle} value={form.name} onChange={e => setForm(f => ({...f, name: e.target.value}))} placeholder="Character name" /></Field>
@@ -290,12 +290,11 @@ function Characters({ campaign, module }) {
         <button style={btnGhost} onClick={cancel}>Cancel</button>
       </div>
     </div>
-  )
+  )}
 
   return (
     <div>
       <SectionHeader title="Characters" onAdd={() => { setAdding(true); setEditing(null); setForm(blank) }} />
-      {(adding || editing) && <FormPanel />}
       {campaign.characters.length === 0 && !adding
         ? <EmptyState message="No characters yet. Add your party members above." />
         : campaign.characters.map(c => {
@@ -360,7 +359,7 @@ function Sessions({ campaign, module }) {
 
   function cancel() { setAdding(false); setEditing(null) }
 
-  const FormPanel = () => (
+  {(adding || editing) && (
     <div style={{ ...cardStyle, borderLeft:'3px solid var(--gold)', marginBottom:'1rem' }}>
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:8 }}>
         <Field label="Session #"><input style={{...inputStyle,width:80}} type="number" value={form.number} onChange={e => setForm(f => ({...f, number: parseInt(e.target.value)||1}))} /></Field>
@@ -379,14 +378,13 @@ function Sessions({ campaign, module }) {
         <button style={btnGhost} onClick={cancel}>Cancel</button>
       </div>
     </div>
-  )
+  )}
 
   const sorted = [...campaign.sessions].sort((a,b) => (b.number||0) - (a.number||0))
 
   return (
     <div>
       <SectionHeader title="Sessions" onAdd={() => { setAdding(true); setEditing(null) }} addLabel="+ Log session" />
-      {(adding || editing) && <FormPanel />}
       {campaign.sessions.length === 0 && !adding
         ? <EmptyState message="No sessions logged yet. Record your first session above." />
         : sorted.map(s => (
@@ -437,7 +435,7 @@ function Encounters({ campaign, module }) {
 
   function cancel() { setAdding(false); setEditing(null) }
 
-  const FormPanel = () => (
+  {(adding || editing) && (
     <div style={{ ...cardStyle, borderLeft:'3px solid var(--gold)', marginBottom:'1rem' }}>
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:8 }}>
         <Field label="Encounter name *"><input style={inputStyle} value={form.name} onChange={e => setForm(f => ({...f, name: e.target.value}))} placeholder="e.g. Goblin ambush..." /></Field>
@@ -459,12 +457,11 @@ function Encounters({ campaign, module }) {
         <button style={btnGhost} onClick={cancel}>Cancel</button>
       </div>
     </div>
-  )
+  )}
 
   return (
     <div>
       <SectionHeader title="Encounters" onAdd={() => { setAdding(true); setEditing(null) }} />
-      {(adding || editing) && <FormPanel />}
       {campaign.encounters.length === 0 && !adding
         ? <EmptyState message="No encounters logged yet." />
         : campaign.encounters.map(e => (
@@ -512,7 +509,7 @@ function Loot({ campaign, module }) {
 
   function cancel() { setAdding(false); setEditing(null) }
 
-  const FormPanel = () => (
+  {(adding || editing) && (
     <div style={{ ...cardStyle, borderLeft:'3px solid var(--gold)', marginBottom:'1rem' }}>
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:8 }}>
         <Field label="Item name *"><input style={inputStyle} value={form.name} onChange={e => setForm(f => ({...f, name: e.target.value}))} placeholder="Item name..." /></Field>
@@ -535,12 +532,11 @@ function Loot({ campaign, module }) {
         <button style={btnGhost} onClick={cancel}>Cancel</button>
       </div>
     </div>
-  )
+  )}
 
   return (
     <div>
       <SectionHeader title="Loot" onAdd={() => { setAdding(true); setEditing(null) }} addLabel="+ Add item" />
-      {(adding || editing) && <FormPanel />}
       {campaign.loot.length === 0 && !adding
         ? <EmptyState message="No loot tracked yet. Add items as your party finds them." />
         : campaign.loot.map(item => (
@@ -589,7 +585,7 @@ function NPCs({ campaign, module }) {
 
   function cancel() { setAdding(false); setEditing(null) }
 
-  const FormPanel = () => (
+  {(adding || editing) && (
     <div style={{ ...cardStyle, borderLeft:'3px solid var(--gold)', marginBottom:'1rem' }}>
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:8 }}>
         <Field label="NPC name *"><input style={inputStyle} value={form.name} onChange={e => setForm(f => ({...f, name: e.target.value}))} /></Field>
@@ -614,12 +610,11 @@ function NPCs({ campaign, module }) {
         <button style={btnGhost} onClick={cancel}>Cancel</button>
       </div>
     </div>
-  )
+  )}
 
   return (
     <div>
       <SectionHeader title="NPCs" onAdd={() => { setAdding(true); setEditing(null) }} addLabel="+ Add NPC" />
-      {(adding || editing) && <FormPanel />}
       {campaign.npcs.length === 0 && !adding
         ? <EmptyState message="No NPCs tracked yet. Add key characters your party has met." />
         : campaign.npcs.map(n => (
@@ -669,7 +664,7 @@ function Quests({ campaign, module }) {
 
   function cancel() { setAdding(false); setEditing(null) }
 
-  const FormPanel = () => (
+  {(adding || editing) && (
     <div style={{ ...cardStyle, borderLeft:'3px solid var(--gold)', marginBottom:'1rem' }}>
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:8 }}>
         <Field label="Quest name *"><input style={inputStyle} value={form.name} onChange={e => setForm(f => ({...f, name: e.target.value}))} placeholder="Quest name..." /></Field>
@@ -692,7 +687,7 @@ function Quests({ campaign, module }) {
         <button style={btnGhost} onClick={cancel}>Cancel</button>
       </div>
     </div>
-  )
+  )}
 
   const sorted = [...campaign.quests].sort((a,b) => {
     const order = { Critical:0, High:1, Medium:2, Low:3 }
@@ -702,7 +697,6 @@ function Quests({ campaign, module }) {
   return (
     <div>
       <SectionHeader title="Quests" onAdd={() => { setAdding(true); setEditing(null) }} addLabel="+ Add quest" />
-      {(adding || editing) && <FormPanel />}
       {campaign.quests.length === 0 && !adding
         ? <EmptyState message="No quests tracked yet. Add your party's active quests above." />
         : sorted.map(q => (
