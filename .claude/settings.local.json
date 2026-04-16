@@ -14,7 +14,10 @@
       "WebFetch(domain:screenrant.com)",
       "WebFetch(domain:gamerant.com)",
       "WebFetch(domain:dungeonmister.com)",
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "WebFetch(domain:dnd5e.info)",
+      "Bash(node -e ' *)",
+      "Bash(node --input-type=module)"
     ]
   }
 }
