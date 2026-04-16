@@ -409,6 +409,31 @@ export default function App() {
             onClose={() => setShowModal(false)}
           />
         )}
+
+        {/* ── Footer ── */}
+        <footer style={{
+          borderTop: '1px solid var(--border)',
+          padding: '1rem 1.25rem',
+          marginTop: '2rem',
+        }}>
+          <p style={{
+            fontSize: 11,
+            color: 'var(--muted)',
+            fontFamily: 'sans-serif',
+            lineHeight: 1.6,
+            maxWidth: 800,
+          }}>
+            This work includes material taken from the System Reference Document 5.1 ("SRD 5.1") and System Reference Document 5.2 ("SRD 5.2") by Wizards of the Coast LLC, available at{' '}
+            <a href="https://www.dndbeyond.com/srd" target="_blank" rel="noreferrer" style={{ color: 'var(--gold)' }}>
+              dndbeyond.com/srd
+            </a>
+            . The SRD 5.1 and SRD 5.2 are licensed under the{' '}
+            <a href="https://creativecommons.org/licenses/by/4.0/legalcode" target="_blank" rel="noreferrer" style={{ color: 'var(--gold)' }}>
+              Creative Commons Attribution 4.0 International License
+            </a>
+            . IdleModeCo D&D Toolkit is not affiliated with or endorsed by Wizards of the Coast.
+          </p>
+        </footer>
       </div>
     </VersionProvider>
   )
