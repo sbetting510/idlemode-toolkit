@@ -13,6 +13,7 @@ import EncounterCalc from './components/tabs/EncounterCalc'
 import ClassSheets from './components/tabs/ClassSheets'
 import CampaignManager from './components/tabs/CampaignManager'
 import DiceRoller     from './components/tabs/DiceRoller'
+import LandingPage    from './components/LandingPage'
 
 const TABS = [
   { id: 'conditions',  label: 'Conditions',     paid: false },
@@ -64,6 +65,7 @@ function GlobalVersionToggle() {
 }
 
 export default function App() {
+  const [showLanding, setShowLanding] = useState(() => !localStorage.getItem('idlemode_visited'))
   const [currentTab, setCurrentTab] = useState('conditions')
   const [searchTerm, setSearchTerm] = useState('')
   const [menuOpen, setMenuOpen] = useState(false)
@@ -85,6 +87,11 @@ export default function App() {
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [])
+
+  function enterApp() {
+    localStorage.setItem('idlemode_visited', '1')
+    setShowLanding(false)
+  }
 
   function goTab(id) {
     setCurrentTab(id)
@@ -118,6 +125,10 @@ export default function App() {
 
   function removeMonster(name) {
     setEncounter(prev => prev.filter(e => e.name !== name))
+  }
+
+  if (showLanding) {
+    return <LandingPage onEnter={enterApp} />
   }
 
   return (
@@ -155,6 +166,21 @@ export default function App() {
 
           {/* Search bar + version toggle */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <button
+              onClick={() => setShowLanding(true)}
+              title="Home"
+              style={{
+                background: 'rgba(255,255,255,0.06)',
+                border: '1px solid var(--border2)',
+                borderRadius: 6,
+                color: 'var(--parch2)',
+                fontSize: 16,
+                width: 40, height: 40,
+                cursor: 'pointer',
+                flexShrink: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}
+            >⌂</button>
             <div style={{
               flex: 1, display: 'flex', alignItems: 'center', gap: 8,
               background: 'rgba(255,255,255,0.06)',
@@ -278,6 +304,21 @@ export default function App() {
               borderTop: 'none', zIndex: 200,
               boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
             }}>
+              <div
+                onClick={() => { setShowLanding(true); setMenuOpen(false) }}
+                style={{
+                  display: 'flex', alignItems: 'center',
+                  padding: '12px 1.25rem',
+                  fontSize: 14, fontFamily: 'Georgia, serif',
+                  color: 'var(--parch2)',
+                  borderBottom: '1px solid var(--border)',
+                  cursor: 'pointer',
+                  gap: 10,
+                }}
+              >
+                <span style={{ width: 6, height: 6, display: 'inline-block' }} />
+                ⌂ Home
+              </div>
               {TABS.map(tab => (
                 <div
                   key={tab.id}
