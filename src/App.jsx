@@ -333,6 +333,19 @@ export default function App() {
               onAddToEncounter={addToEncounter}
             />
           )}
+          {currentTab === 'encounter'   && (
+            <EncounterCalc
+              encounter={encounter}
+              partySize={partySize}
+              partyLevel={partyLevel}
+              onPartySize={setPartySize}
+              onPartyLevel={setPartyLevel}
+              onChangeQty={changeQty}
+              onRemove={removeMonster}
+              onClear={() => setEncounter([])}
+            />
+          )}
+        {currentTab === 'campaign'    && <CampaignManager />}
         </main>
 
         {/* ── Footer ── */}
