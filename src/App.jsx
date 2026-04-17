@@ -23,8 +23,8 @@ const TABS = [
   { id: 'classes',     label: 'Class Sheets',    paid: false },
   { id: 'dice',        label: 'Dice Roller',     paid: false },
   { id: 'monsters',    label: 'Monsters',        paid: false },
-  { id: 'encounter',   label: 'Encounter Calc',  paid: true  },
-  { id: 'campaign',    label: 'Campaign Manager', paid: true  },
+  { id: 'encounter',   label: 'Encounter Calc',  paid: false },
+  { id: 'campaign',    label: 'Campaign Manager', paid: false },
 ]
 
 // Sits inside <VersionProvider> so it can call useVersion
@@ -87,11 +87,6 @@ export default function App() {
   }, [])
 
   function goTab(id) {
-    const tab = TABS.find(t => t.id === id)
-    if (tab?.paid && !unlocked) {
-      setShowModal(true)
-      return
-    }
     setCurrentTab(id)
     setMenuOpen(false)
     setSearchTerm('')
@@ -338,77 +333,7 @@ export default function App() {
               onAddToEncounter={addToEncounter}
             />
           )}
-          {currentTab === 'encounter' && !unlocked && (
-            <div style={{ textAlign: 'center', padding: '3rem 1rem' }}>
-              <div style={{ fontSize: 32, marginBottom: '1rem' }}>🔒</div>
-              <div style={{ fontSize: 18, fontWeight: 'bold', color: 'var(--gold)', marginBottom: '0.5rem' }}>
-                Encounter Calculator
-              </div>
-              <div style={{ fontSize: 14, color: 'var(--parch2)', marginBottom: '1.5rem', lineHeight: 1.6 }}>
-                Build and balance encounters for your party.<br />
-                Unlock the full toolkit to access this feature.
-              </div>
-              <button
-                onClick={() => setShowModal(true)}
-                style={{
-                  background: 'var(--crimson)',
-                  border: '1px solid var(--gold)',
-                  borderRadius: 6, color: 'var(--gold)',
-                  fontFamily: 'Georgia, serif',
-                  fontSize: 15, fontWeight: 'bold',
-                  padding: '10px 28px', cursor: 'pointer',
-                }}
-              >
-                Unlock Full Toolkit — $19.99
-              </button>
-            </div>
-          )}
-          {currentTab === 'encounter' && unlocked && (
-            <EncounterCalc
-              encounter={encounter}
-              partySize={partySize}
-              partyLevel={partyLevel}
-              onPartySize={setPartySize}
-              onPartyLevel={setPartyLevel}
-              onChangeQty={changeQty}
-              onRemove={removeMonster}
-              onClear={() => setEncounter([])}
-            />
-          )}
-          {currentTab === 'campaign' && !unlocked && (
-            <div style={{ textAlign:'center', padding:'3rem 1rem' }}>
-              <div style={{ fontSize:32, marginBottom:'1rem' }}>🔒</div>
-              <div style={{ fontSize:18, fontWeight:'bold', color:'var(--gold)', marginBottom:'0.5rem' }}>
-                Campaign Manager
-              </div>
-              <div style={{ fontSize:14, color:'var(--parch2)', marginBottom:'1.5rem', lineHeight:1.6 }}>
-                Track your entire campaign — characters, sessions, encounters, loot, NPCs, and quests.<br />
-                Unlock the full toolkit to access this feature.
-              </div>
-              <button
-                onClick={() => setShowModal(true)}
-                style={{ background:'var(--crimson)', border:'1px solid var(--gold)', borderRadius:6, color:'var(--gold)', fontFamily:'Georgia, serif', fontSize:15, fontWeight:'bold', padding:'10px 28px', cursor:'pointer' }}
-              >
-                Unlock Full Toolkit — $19.99
-              </button>
-            </div>
-          )}
-          {currentTab === 'campaign' && unlocked && <CampaignManager />}
         </main>
-
-        {showModal && (
-          <UnlockModal
-            onUnlock={(key) => {
-              const success = unlock(key)
-              if (success) {
-                setShowModal(false)
-                setCurrentTab('encounter')
-              }
-              return success
-            }}
-            onClose={() => setShowModal(false)}
-          />
-        )}
 
         {/* ── Footer ── */}
         <footer style={{
