@@ -194,17 +194,6 @@ export default function Monsters({ searchTerm, onAddToEncounter, encounter = [] 
                       {m[7] || '—'}
                     </td>
                     <td style={{ padding:'8px 10px', verticalAlign:'middle' }}>
-                      {(() => { const qty = encounter.find(e => e.name === name)?.qty ?? 0; return qty > 0 ? (
-                        <span style={{
-                          display:'inline-block', marginRight:5,
-                          padding:'1px 6px', borderRadius:10,
-                          background:'rgba(201,168,76,0.12)',
-                          border:'1px solid var(--gold)',
-                          color:'var(--gold)',
-                          fontFamily:'sans-serif', fontSize:11,
-                          fontWeight:'bold',
-                        }}>×{qty}</span>
-                      ) : null })()}
                       <button
                         onClick={e => { e.stopPropagation(); onAddToEncounter(name, cr) }}
                         style={{
@@ -214,6 +203,17 @@ export default function Monsters({ searchTerm, onAddToEncounter, encounter = [] 
                           fontSize:11, padding:'3px 8px', cursor:'pointer',
                         }}
                       >+ Add</button>
+                      {(() => { const qty = encounter.find(e => e.name === name)?.qty ?? 0; return qty > 0 ? (
+                        <span style={{
+                          display:'inline-block', marginLeft:5,
+                          padding:'1px 6px', borderRadius:10,
+                          background:'rgba(201,168,76,0.12)',
+                          border:'1px solid var(--gold)',
+                          color:'var(--gold)',
+                          fontFamily:'sans-serif', fontSize:11,
+                          fontWeight:'bold',
+                        }}>×{qty}</span>
+                      ) : null })()}
                     </td>
                   </tr>
                 )
