@@ -433,6 +433,22 @@ export default function App() {
             </a>
             . IdleModeCo D&D Toolkit is not affiliated with or endorsed by Wizards of the Coast.
           </p>
+          <p style={{
+            fontSize: 12,
+            color: 'var(--muted)',
+            fontFamily: 'sans-serif',
+            marginTop: 8,
+          }}>
+            Looking for offline tools?{' '}
+  
+            <a href="https://www.etsy.com/shop/IdleModeCo"
+            target="_blank"
+            rel="noreferrer"
+            style={{ color: 'var(--gold)' }}
+          >
+            Browse our D&D Google Sheets toolkit on Etsy
+          </a>
+        </p>
         </footer>
       </div>
     </VersionProvider>
