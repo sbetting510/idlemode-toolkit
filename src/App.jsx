@@ -331,6 +331,7 @@ export default function App() {
             <Monsters
               searchTerm={searchTerm}
               onAddToEncounter={addToEncounter}
+              encounter={encounter}
             />
           )}
           {currentTab === 'encounter'   && (
