@@ -29,15 +29,6 @@ const TABS = [
   { id: 'campaign',    label: 'Campaign Manager', paid: false },
 ]
 
-function App() {
-  return (
-    <>
-      {/* your existing app */}
-      <Analytics />
-    </>
-  )
-}
-
 // Sits inside <VersionProvider> so it can call useVersion
 function GlobalVersionToggle() {
   const { globalVersion, setGlobalVersion } = useVersion()
@@ -144,7 +135,7 @@ export default function App() {
   return (
     <VersionProvider>
       <div style={{ maxWidth: 1400, margin: '0 auto', paddingBottom: '2rem' }}>
-
+      <Analytics />
         {/* ── Header ── */}
         <header style={{
           background: 'var(--stone2)',
