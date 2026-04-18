@@ -1,4 +1,4 @@
-import { Analytics } from "@vercel/analytics/next"
+import { Analytics } from "@vercel/analytics/react"
 import { useLicense }  from './hooks/useLicense'
 import UnlockModal     from './components/ui/UnlockModal'
 import { useState, useEffect } from 'react'
@@ -28,6 +28,15 @@ const TABS = [
   { id: 'encounter',   label: 'Encounter Calc',  paid: false },
   { id: 'campaign',    label: 'Campaign Manager', paid: false },
 ]
+
+function App() {
+  return (
+    <>
+      {/* your existing app */}
+      <Analytics />
+    </>
+  )
+}
 
 // Sits inside <VersionProvider> so it can call useVersion
 function GlobalVersionToggle() {
