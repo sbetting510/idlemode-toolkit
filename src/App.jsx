@@ -1,3 +1,4 @@
+import { Analytics } from "@vercel/analytics/next"
 import { useLicense }  from './hooks/useLicense'
 import UnlockModal     from './components/ui/UnlockModal'
 import { useState, useEffect } from 'react'
