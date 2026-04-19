@@ -430,6 +430,23 @@ export default function App() {
             Browse our D&D Google Sheets toolkit on Etsy
           </a>
         </p>
+        <p style={{
+          fontSize: 12,
+          color: 'var(--muted)',
+          fontFamily: 'sans-serif',
+          marginTop: 8,
+        }}>
+          If this toolkit has saved your session,{' '}
+    
+          <a href="https://ko-fi.com/idlemode"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ color: 'var(--gold)' }}
+          >
+            ☕ buy us a coffee on Ko-fi
+          </a>
+          {' '}— it keeps new stuff coming.
+        </p>
         </footer>
       </div>
     </VersionProvider>
