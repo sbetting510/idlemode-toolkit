@@ -129,13 +129,19 @@ export default function App() {
   }
 
   if (showLanding) {
-    return <LandingPage onEnter={enterApp} />
+    return (
+      <>
+        <Analytics />
+        <LandingPage onEnter={enterApp} />
+      </>
+    )
   }
 
   return (
     <VersionProvider>
+      <>
+        <Analytics />
       <div style={{ maxWidth: 1400, margin: '0 auto', paddingBottom: '2rem' }}>
-      <Analytics />
         {/* ── Header ── */}
         <header style={{
           background: 'var(--stone2)',
@@ -461,6 +467,7 @@ export default function App() {
         </p>
         </footer>
       </div>
+    </>
     </VersionProvider>
   )
 }
