@@ -120,6 +120,24 @@ const CLASS_PATCHES = {
       { name: 'Illusionist', desc: 'Illusion Savant, Improved Minor Illusion, Malleable Illusions, and Illusory Reality' },
     ],
   },
+  artificer: {
+    subclasses: [
+      { name: 'Alchemist',    desc: 'Experimental Elixirs (random magical draughts), Alchemical Savant (Int bonus to healing/damage spells), Restorative Reagents, and Chemical Mastery' },
+      { name: 'Armorer',      desc: 'Tools of the Trade (heavy armor proficiency), Arcane Armor (Guardian or Infiltrator models), Armor Modifications (extra infusion slots), and Perfected Armor' },
+      { name: 'Artillerist',  desc: 'Eldritch Cannon (flamethrower, force ballista, or protector), Arcane Firearm (+1d8 to spell damage), Explosive Cannon, and Fortified Position' },
+      { name: 'Battle Smith', desc: 'Battle Ready (Int for weapon attacks), Steel Defender (CR 2 mechanical companion), Arcane Jolt (+2d6 force or healing on hit), and Improved Defender' },
+    ],
+  },
+  bloodhunter: {
+    // Blood Hunter is a Matt Mercer homebrew (2022 version); compatible with 2024 rules.
+    // No official 2024 PHB version exists — core mechanics are unchanged.
+    subclasses: [
+      { name: 'Order of the Ghostslayer',  desc: 'Rite of the Dawn (radiant rite), Ethereal Step (see Ethereal Plane), Blood Curse of the Exorcist, and Brand of Sundering' },
+      { name: 'Order of the Lycan',        desc: 'Heightened Senses, Hybrid Transformation (wolf hybrid form with claws and Enhanced Speed), Stalker\'s Prowess, and Advanced Transformation' },
+      { name: 'Order of the Mutant',       desc: 'Mutagenic Serums (Aether, Cruelty, Impetus, Mobility, Potency, Sagacity, Shielding, Unbreakable), Mutagenic Mastery, and Strange Metabolism' },
+      { name: 'Order of the Profane Soul', desc: 'Pact Magic (Archfey, Fiend, or Great Old One patron), Mystical Nitpick, Crimson Vector, and Terrible Curse' },
+    ],
+  },
 }
 
 // Adjust the feature list when a class's subclass level changed
