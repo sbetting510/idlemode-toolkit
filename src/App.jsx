@@ -447,6 +447,18 @@ export default function App() {
           </a>
           {' '}— it keeps new stuff coming.
         </p>
+        <p style={{
+          fontSize: 12,
+          color: 'var(--muted)',
+          fontFamily: 'sans-serif',
+          marginTop: 8,
+        }}>
+          Have feedback or a feature request?{' '}
+          <a href="mailto:shopidlemode@gmail.com" style={{ color: 'var(--gold)' }}>
+            shopidlemode@gmail.com
+          </a>
+          {' '}— we read everything.
+        </p>
         </footer>
       </div>
     </VersionProvider>
