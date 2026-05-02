@@ -12,9 +12,10 @@ import Spells      from './components/tabs/Spells'
 import Monsters    from './components/tabs/Monsters'
 import EncounterCalc from './components/tabs/EncounterCalc'
 import ClassSheets from './components/tabs/ClassSheets'
-import CampaignManager from './components/tabs/CampaignManager'
-import DiceRoller     from './components/tabs/DiceRoller'
-import LandingPage    from './components/LandingPage'
+import CampaignManager  from './components/tabs/CampaignManager'
+import DiceRoller       from './components/tabs/DiceRoller'
+import LandingPage      from './components/LandingPage'
+import CharacterBuilder from './components/tabs/CharacterBuilder'
 
 const TABS = [
   { id: 'conditions',  label: 'Conditions',     paid: false },
@@ -27,6 +28,7 @@ const TABS = [
   { id: 'monsters',    label: 'Monsters',        paid: false },
   { id: 'encounter',   label: 'Encounter Calc',  paid: false },
   { id: 'campaign',    label: 'Campaign Manager', paid: false },
+  { id: 'builder',    label: 'Character Builder', paid: false },
 ]
 
 // Sits inside <VersionProvider> so it can call useVersion
@@ -75,6 +77,8 @@ export default function App() {
   const [partyLevel, setPartyLevel] = useState(5)
   const { unlocked, unlock, revoke } = useLicense()
   const [showModal, setShowModal] = useState(false)
+  const [editCharId, setEditCharId] = useState(null)
+  const [campaignInitialModule, setCampaignInitialModule] = useState('overview')
 
   const activeTab = TABS.find(t => t.id === currentTab)
 
@@ -388,7 +392,26 @@ export default function App() {
               onClear={() => setEncounter([])}
             />
           )}
-        {currentTab === 'campaign'    && <CampaignManager />}
+          {currentTab === 'campaign'  && (
+            <CampaignManager
+              initialModule={campaignInitialModule}
+              onOpenBuilder={(charId) => {
+                setCampaignInitialModule('overview')
+                setEditCharId(charId || null)
+                goTab('builder')
+              }}
+            />
+          )}
+          {currentTab === 'builder'   && (
+            <CharacterBuilder
+              editCharId={editCharId}
+              onGoToCampaign={() => {
+                setEditCharId(null)
+                setCampaignInitialModule('characters') // land on Characters after save
+                goTab('campaign')
+              }}
+            />
+          )}
         </main>
 
         {/* ── Footer ── */}

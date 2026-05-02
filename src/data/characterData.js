@@ -1,0 +1,705 @@
+// ── D&D 5e SRD Character Reference Data ──────────────────────────────────────
+// Covers 2014 SRD (default). 2024 variants noted inline where different.
+
+// ── Proficiency Bonus by Level ────────────────────────────────────────────────
+export const PROF_BONUS = {
+  1:2,2:2,3:2,4:2,5:3,6:3,7:3,8:3,9:4,10:4,
+  11:4,12:4,13:5,14:5,15:5,16:5,17:6,18:6,19:6,20:6,
+}
+
+// ── Ability Score Modifier ────────────────────────────────────────────────────
+export function abilityMod(score) {
+  return Math.floor((score - 10) / 2)
+}
+
+export function modStr(score) {
+  const m = abilityMod(score)
+  return (m >= 0 ? '+' : '') + m
+}
+
+// ── Spell Slots by Class/Level ────────────────────────────────────────────────
+// [L1, L2, L3, L4, L5, L6, L7, L8, L9]
+const FULL_CASTER_SLOTS = {
+  1:  [2,0,0,0,0,0,0,0,0],
+  2:  [3,0,0,0,0,0,0,0,0],
+  3:  [4,2,0,0,0,0,0,0,0],
+  4:  [4,3,0,0,0,0,0,0,0],
+  5:  [4,3,2,0,0,0,0,0,0],
+  6:  [4,3,3,0,0,0,0,0,0],
+  7:  [4,3,3,1,0,0,0,0,0],
+  8:  [4,3,3,2,0,0,0,0,0],
+  9:  [4,3,3,3,1,0,0,0,0],
+  10: [4,3,3,3,2,0,0,0,0],
+  11: [4,3,3,3,2,1,0,0,0],
+  12: [4,3,3,3,2,1,0,0,0],
+  13: [4,3,3,3,2,1,1,0,0],
+  14: [4,3,3,3,2,1,1,0,0],
+  15: [4,3,3,3,2,1,1,1,0],
+  16: [4,3,3,3,2,1,1,1,0],
+  17: [4,3,3,3,2,1,1,1,1],
+  18: [4,3,3,3,3,1,1,1,1],
+  19: [4,3,3,3,3,2,1,1,1],
+  20: [4,3,3,3,3,2,2,1,1],
+}
+
+const HALF_CASTER_SLOTS = {
+  1:  [0,0,0,0,0,0,0,0,0],
+  2:  [2,0,0,0,0,0,0,0,0],
+  3:  [3,0,0,0,0,0,0,0,0],
+  4:  [3,0,0,0,0,0,0,0,0],
+  5:  [4,2,0,0,0,0,0,0,0],
+  6:  [4,2,0,0,0,0,0,0,0],
+  7:  [4,3,0,0,0,0,0,0,0],
+  8:  [4,3,0,0,0,0,0,0,0],
+  9:  [4,3,2,0,0,0,0,0,0],
+  10: [4,3,2,0,0,0,0,0,0],
+  11: [4,3,3,0,0,0,0,0,0],
+  12: [4,3,3,0,0,0,0,0,0],
+  13: [4,3,3,1,0,0,0,0,0],
+  14: [4,3,3,1,0,0,0,0,0],
+  15: [4,3,3,2,0,0,0,0,0],
+  16: [4,3,3,2,0,0,0,0,0],
+  17: [4,3,3,3,1,0,0,0,0],
+  18: [4,3,3,3,1,0,0,0,0],
+  19: [4,3,3,3,2,0,0,0,0],
+  20: [4,3,3,3,2,0,0,0,0],
+}
+
+// Warlock uses Pact Magic (separate slots)
+const WARLOCK_SLOTS = {
+  1:{slots:1,level:1}, 2:{slots:2,level:1}, 3:{slots:2,level:2}, 4:{slots:2,level:2},
+  5:{slots:2,level:3}, 6:{slots:2,level:3}, 7:{slots:2,level:4}, 8:{slots:2,level:4},
+  9:{slots:2,level:5}, 10:{slots:2,level:5}, 11:{slots:3,level:5}, 12:{slots:3,level:5},
+  13:{slots:3,level:5}, 14:{slots:3,level:5}, 15:{slots:3,level:5}, 16:{slots:3,level:5},
+  17:{slots:4,level:5}, 18:{slots:4,level:5}, 19:{slots:4,level:5}, 20:{slots:4,level:5},
+}
+
+export function getSpellSlots(className, level) {
+  if (['Bard','Cleric','Druid','Sorcerer','Wizard'].includes(className)) return FULL_CASTER_SLOTS[level] || []
+  if (['Paladin','Ranger'].includes(className)) return HALF_CASTER_SLOTS[level] || []
+  if (className === 'Warlock') return WARLOCK_SLOTS[level] || null
+  return null
+}
+
+// ── Skills ────────────────────────────────────────────────────────────────────
+export const SKILLS = [
+  { name: 'Acrobatics',      ability: 'dex' },
+  { name: 'Animal Handling', ability: 'wis' },
+  { name: 'Arcana',          ability: 'int' },
+  { name: 'Athletics',       ability: 'str' },
+  { name: 'Deception',       ability: 'cha' },
+  { name: 'History',         ability: 'int' },
+  { name: 'Insight',         ability: 'wis' },
+  { name: 'Intimidation',    ability: 'cha' },
+  { name: 'Investigation',   ability: 'int' },
+  { name: 'Medicine',        ability: 'wis' },
+  { name: 'Nature',          ability: 'int' },
+  { name: 'Perception',      ability: 'wis' },
+  { name: 'Performance',     ability: 'cha' },
+  { name: 'Persuasion',      ability: 'cha' },
+  { name: 'Religion',        ability: 'int' },
+  { name: 'Sleight of Hand', ability: 'dex' },
+  { name: 'Stealth',         ability: 'dex' },
+  { name: 'Survival',        ability: 'wis' },
+]
+
+export const ABILITIES = ['str','dex','con','int','wis','cha']
+export const ABILITY_LABELS = { str:'Strength', dex:'Dexterity', con:'Constitution', int:'Intelligence', wis:'Wisdom', cha:'Charisma' }
+export const ABILITY_SHORT  = { str:'STR', dex:'DEX', con:'CON', int:'INT', wis:'WIS', cha:'CHA' }
+
+// ── Alignments ────────────────────────────────────────────────────────────────
+export const ALIGNMENTS = [
+  'Lawful Good','Neutral Good','Chaotic Good',
+  'Lawful Neutral','True Neutral','Chaotic Neutral',
+  'Lawful Evil','Neutral Evil','Chaotic Evil',
+  'Unaligned',
+]
+
+// ── Races ─────────────────────────────────────────────────────────────────────
+// asi: ability score increases { str, dex, con, int, wis, cha }
+// subraces: array of subrace objects with their own asi + traits
+export const RACES = [
+  {
+    name: 'Human',
+    size: 'Medium', speed: 30,
+    asi: { str:1, dex:1, con:1, int:1, wis:1, cha:1 },
+    traits: ['Extra Language', 'Extra Skill Proficiency'],
+    subraces: [],
+    languages: ['Common', 'One of your choice'],
+  },
+  {
+    name: 'Elf',
+    size: 'Medium', speed: 30,
+    asi: { dex:2 },
+    traits: ['Darkvision 60ft', 'Keen Senses (Perception proficiency)', 'Fey Ancestry', 'Trance'],
+    languages: ['Common', 'Elvish'],
+    subraces: [
+      { name: 'High Elf',  asi: { int:1 }, traits: ['Cantrip (Wizard list)', 'Extra Language'] },
+      { name: 'Wood Elf',  asi: { wis:1 }, traits: ['Mask of the Wild', 'Fleet of Foot (speed 35)'], speed: 35 },
+      { name: 'Dark Elf (Drow)', asi: { cha:1 }, traits: ['Superior Darkvision 120ft', 'Sunlight Sensitivity', 'Drow Magic', 'Drow Weapon Training'] },
+    ],
+  },
+  {
+    name: 'Dwarf',
+    size: 'Medium', speed: 25,
+    asi: { con:2 },
+    traits: ['Darkvision 60ft', 'Dwarven Resilience', 'Stonecunning', 'Dwarven Combat Training', 'Tool Proficiency'],
+    languages: ['Common', 'Dwarvish'],
+    subraces: [
+      { name: 'Hill Dwarf',     asi: { wis:1 }, traits: ['Dwarven Toughness (+1 HP per level)'] },
+      { name: 'Mountain Dwarf', asi: { str:2 }, traits: ['Dwarven Armor Training'] },
+    ],
+  },
+  {
+    name: 'Halfling',
+    size: 'Small', speed: 25,
+    asi: { dex:2 },
+    traits: ['Lucky', 'Brave', 'Halfling Nimbleness'],
+    languages: ['Common', 'Halfling'],
+    subraces: [
+      { name: 'Lightfoot Halfling', asi: { cha:1 }, traits: ['Naturally Stealthy'] },
+      { name: 'Stout Halfling',     asi: { con:1 }, traits: ['Stout Resilience (poison resistance)'] },
+    ],
+  },
+  {
+    name: 'Gnome',
+    size: 'Small', speed: 25,
+    asi: { int:2 },
+    traits: ['Darkvision 60ft', 'Gnome Cunning'],
+    languages: ['Common', 'Gnomish'],
+    subraces: [
+      { name: 'Forest Gnome', asi: { dex:1 }, traits: ['Natural Illusionist (Minor Illusion cantrip)', 'Speak with Small Beasts'] },
+      { name: 'Rock Gnome',   asi: { con:1 }, traits: ["Artificer's Lore", 'Tinker'] },
+    ],
+  },
+  {
+    name: 'Half-Elf',
+    size: 'Medium', speed: 30,
+    asi: { cha:2, _choice2: true }, // +1 to two others of choice
+    traits: ['Darkvision 60ft', 'Fey Ancestry', 'Skill Versatility (2 skill proficiencies)', 'Extra Language'],
+    languages: ['Common', 'Elvish', 'One of your choice'],
+    subraces: [],
+  },
+  {
+    name: 'Half-Orc',
+    size: 'Medium', speed: 30,
+    asi: { str:2, con:1 },
+    traits: ['Darkvision 60ft', 'Menacing (Intimidation proficiency)', 'Relentless Endurance', 'Savage Attacks'],
+    languages: ['Common', 'Orc'],
+    subraces: [],
+  },
+  {
+    name: 'Tiefling',
+    size: 'Medium', speed: 30,
+    asi: { int:1, cha:2 },
+    traits: ['Darkvision 60ft', 'Hellish Resistance (fire resistance)', 'Infernal Legacy (Thaumaturgy, Hellish Rebuke, Darkness)'],
+    languages: ['Common', 'Infernal'],
+    subraces: [],
+  },
+  {
+    name: 'Dragonborn',
+    size: 'Medium', speed: 30,
+    asi: { str:2, cha:1 },
+    traits: ['Draconic Ancestry (choose damage type)', 'Breath Weapon', 'Damage Resistance'],
+    languages: ['Common', 'Draconic'],
+    subraces: [],
+    dragonAncestry: ['Black (Acid)','Blue (Lightning)','Brass (Fire)','Bronze (Lightning)',
+      'Copper (Acid)','Gold (Fire)','Green (Poison)','Red (Fire)','Silver (Cold)','White (Cold)'],
+  },
+]
+
+// ── Classes ───────────────────────────────────────────────────────────────────
+export const CLASSES = [
+  {
+    name: 'Barbarian',
+    hitDie: 12,
+    primaryAbility: 'str',
+    savingThrows: ['str','con'],
+    armorProfs: ['Light','Medium','Shields'],
+    weaponProfs: ['Simple','Martial'],
+    spellcasting: null,
+    skillCount: 2,
+    skillChoices: ['Animal Handling','Athletics','Intimidation','Nature','Perception','Survival'],
+    subclassLevel: 3,
+    subclassLabel: 'Primal Path',
+    subclasses: ['Path of the Berserker','Path of the Totem Warrior'],
+    equipment: ['Greataxe or any martial melee weapon','Two handaxes or any simple weapon','Explorer\'s pack, four javelins'],
+    features: {
+      1: ['Rage','Unarmored Defense'],
+      2: ['Reckless Attack','Danger Sense'],
+      3: ['Primal Path (choose subclass)'],
+      4: ['Ability Score Improvement'],
+      5: ['Extra Attack','Fast Movement'],
+      6: ['Path Feature'],
+      7: ['Feral Instinct'],
+      8: ['Ability Score Improvement'],
+      9: ['Brutal Critical (1 die)'],
+      10: ['Path Feature'],
+    },
+  },
+  {
+    name: 'Bard',
+    hitDie: 8,
+    primaryAbility: 'cha',
+    savingThrows: ['dex','cha'],
+    armorProfs: ['Light'],
+    weaponProfs: ['Simple','Hand crossbows','Longswords','Rapiers','Shortswords'],
+    spellcasting: 'full',
+    spellcastingAbility: 'cha',
+    skillCount: 3,
+    skillChoices: 'any',
+    subclassLevel: 3,
+    subclassLabel: 'Bard College',
+    subclasses: ['College of Lore','College of Valor'],
+    equipment: ['Rapier, longsword, or any simple weapon','Diplomat\'s or entertainer\'s pack','Lute or other musical instrument','Leather armor, dagger'],
+    features: {
+      1: ['Spellcasting','Bardic Inspiration (d6)'],
+      2: ['Jack of All Trades','Song of Rest (d6)'],
+      3: ['Bard College (choose subclass)','Expertise (2 skills)'],
+      4: ['Ability Score Improvement'],
+      5: ['Bardic Inspiration (d8)','Font of Inspiration'],
+      6: ['College Feature','Countercharm'],
+    },
+  },
+  {
+    name: 'Cleric',
+    hitDie: 8,
+    primaryAbility: 'wis',
+    savingThrows: ['wis','cha'],
+    armorProfs: ['Light','Medium','Shields'],
+    weaponProfs: ['Simple'],
+    spellcasting: 'full',
+    spellcastingAbility: 'wis',
+    skillCount: 2,
+    skillChoices: ['History','Insight','Medicine','Persuasion','Religion'],
+    subclassLevel: 1,
+    subclassLabel: 'Divine Domain',
+    subclasses: ['Knowledge Domain','Life Domain','Light Domain','Nature Domain','Tempest Domain','Trickery Domain','War Domain'],
+    equipment: ['Mace or warhammer (if proficient)','Scale mail, leather, or chain mail','Light or heavy crossbow','Priest\'s pack or explorer\'s pack','Shield','Holy symbol'],
+    features: {
+      1: ['Spellcasting','Divine Domain (choose subclass)','Domain Spells'],
+      2: ['Channel Divinity (1/rest)','Domain Feature'],
+      3: ['Domain Spells'],
+      4: ['Ability Score Improvement'],
+      5: ['Destroy Undead (CR 1/2)','Domain Spells'],
+      6: ['Channel Divinity (2/rest)','Domain Feature'],
+    },
+  },
+  {
+    name: 'Druid',
+    hitDie: 8,
+    primaryAbility: 'wis',
+    savingThrows: ['int','wis'],
+    armorProfs: ['Light','Medium','Shields (nonmetal)'],
+    weaponProfs: ['Clubs','Daggers','Darts','Javelins','Maces','Quarterstaffs','Scimitars','Sickles','Slings','Spears'],
+    spellcasting: 'full',
+    spellcastingAbility: 'wis',
+    skillCount: 2,
+    skillChoices: ['Arcana','Animal Handling','Insight','Medicine','Nature','Perception','Religion','Survival'],
+    subclassLevel: 2,
+    subclassLabel: 'Druid Circle',
+    subclasses: ['Circle of the Land','Circle of the Moon'],
+    equipment: ['Wooden shield or simple weapon','Scimitar or simple melee weapon','Leather armor','Explorer\'s pack','Druidic focus'],
+    features: {
+      1: ['Druidic Language','Spellcasting'],
+      2: ['Wild Shape (CR 1/4, no swim/fly)','Druid Circle (choose subclass)'],
+      3: [],
+      4: ['Wild Shape Improvement (CR 1/2, swim speed)','Ability Score Improvement'],
+      5: [],
+      6: ['Druid Circle Feature'],
+    },
+  },
+  {
+    name: 'Fighter',
+    hitDie: 10,
+    primaryAbility: 'str',
+    savingThrows: ['str','con'],
+    armorProfs: ['All armor','Shields'],
+    weaponProfs: ['Simple','Martial'],
+    spellcasting: null,
+    skillCount: 2,
+    skillChoices: ['Acrobatics','Animal Handling','Athletics','History','Insight','Intimidation','Perception','Survival'],
+    subclassLevel: 3,
+    subclassLabel: 'Martial Archetype',
+    subclasses: ['Champion','Battle Master','Eldritch Knight'],
+    equipment: ['Chain mail or leather armor, longbow, 20 arrows','Martial weapon + shield, or two martial weapons','Light crossbow + 20 bolts, or two handaxes','Dungeoneer\'s or explorer\'s pack'],
+    features: {
+      1: ['Fighting Style','Second Wind'],
+      2: ['Action Surge (1/rest)'],
+      3: ['Martial Archetype (choose subclass)'],
+      4: ['Ability Score Improvement'],
+      5: ['Extra Attack'],
+      6: ['Ability Score Improvement'],
+      7: ['Archetype Feature'],
+    },
+  },
+  {
+    name: 'Monk',
+    hitDie: 8,
+    primaryAbility: 'dex',
+    savingThrows: ['str','dex'],
+    armorProfs: [],
+    weaponProfs: ['Simple','Shortswords'],
+    spellcasting: null,
+    skillCount: 2,
+    skillChoices: ['Acrobatics','Athletics','History','Insight','Religion','Stealth'],
+    subclassLevel: 3,
+    subclassLabel: 'Monastic Tradition',
+    subclasses: ['Way of the Open Hand','Way of Shadow','Way of the Four Elements'],
+    equipment: ['Shortsword or any simple weapon','Dungeoneer\'s or explorer\'s pack','10 darts'],
+    features: {
+      1: ['Unarmored Defense','Martial Arts (d4)'],
+      2: ['Ki (2 points)','Unarmored Movement (+10ft)','Flurry of Blows','Patient Defense','Step of the Wind'],
+      3: ['Monastic Tradition (choose subclass)','Deflect Missiles'],
+      4: ['Ability Score Improvement','Slow Fall'],
+      5: ['Extra Attack','Stunning Strike'],
+      6: ['Ki-Empowered Strikes','Monastic Tradition Feature'],
+    },
+  },
+  {
+    name: 'Paladin',
+    hitDie: 10,
+    primaryAbility: 'str',
+    savingThrows: ['wis','cha'],
+    armorProfs: ['All armor','Shields'],
+    weaponProfs: ['Simple','Martial'],
+    spellcasting: 'half',
+    spellcastingAbility: 'cha',
+    skillCount: 2,
+    skillChoices: ['Athletics','Insight','Intimidation','Medicine','Persuasion','Religion'],
+    subclassLevel: 3,
+    subclassLabel: 'Sacred Oath',
+    subclasses: ['Oath of Devotion','Oath of the Ancients','Oath of Vengeance'],
+    equipment: ['Martial weapon + shield, or two martial weapons','Five javelins or simple melee weapon','Priest\'s pack or explorer\'s pack','Chain mail and holy symbol'],
+    features: {
+      1: ['Divine Sense','Lay on Hands (5 × level HP pool)'],
+      2: ['Spellcasting','Fighting Style','Divine Smite'],
+      3: ['Sacred Oath (choose subclass)','Divine Health','Oath Spells'],
+      4: ['Ability Score Improvement'],
+      5: ['Extra Attack'],
+      6: ['Aura of Protection (+CHA to saves, 10ft)'],
+    },
+  },
+  {
+    name: 'Ranger',
+    hitDie: 10,
+    primaryAbility: 'dex',
+    savingThrows: ['str','dex'],
+    armorProfs: ['Light','Medium','Shields'],
+    weaponProfs: ['Simple','Martial'],
+    spellcasting: 'half',
+    spellcastingAbility: 'wis',
+    skillCount: 3,
+    skillChoices: ['Animal Handling','Athletics','Insight','Investigation','Nature','Perception','Stealth','Survival'],
+    subclassLevel: 3,
+    subclassLabel: 'Ranger Archetype',
+    subclasses: ['Hunter','Beast Master'],
+    equipment: ['Scale mail or leather armor','Two shortswords or two simple melee weapons','Dungeoneer\'s or explorer\'s pack','Longbow, quiver, 20 arrows'],
+    features: {
+      1: ['Favored Enemy','Natural Explorer'],
+      2: ['Fighting Style','Spellcasting'],
+      3: ['Ranger Archetype (choose subclass)','Primeval Awareness'],
+      4: ['Ability Score Improvement'],
+      5: ['Extra Attack'],
+      6: ['Favored Enemy Improvement','Natural Explorer Improvement'],
+    },
+  },
+  {
+    name: 'Rogue',
+    hitDie: 8,
+    primaryAbility: 'dex',
+    savingThrows: ['dex','int'],
+    armorProfs: ['Light'],
+    weaponProfs: ['Simple','Hand crossbows','Longswords','Rapiers','Shortswords'],
+    spellcasting: null,
+    skillCount: 4,
+    skillChoices: ['Acrobatics','Athletics','Deception','Insight','Intimidation','Investigation','Perception','Performance','Persuasion','Sleight of Hand','Stealth'],
+    subclassLevel: 3,
+    subclassLabel: 'Roguish Archetype',
+    subclasses: ['Thief','Assassin','Arcane Trickster'],
+    equipment: ['Rapier or shortsword','Shortbow + quiver + 20 arrows, or shortsword','Burglar\'s, dungeoneer\'s, or explorer\'s pack','Leather armor, two daggers, thieves\' tools'],
+    features: {
+      1: ['Expertise (2 skills + thieves\' tools)','Sneak Attack (1d6)','Thieves\' Cant'],
+      2: ['Cunning Action'],
+      3: ['Roguish Archetype (choose subclass)','Sneak Attack (2d6)'],
+      4: ['Ability Score Improvement'],
+      5: ['Uncanny Dodge','Sneak Attack (3d6)'],
+      6: ['Expertise (2 more skills)'],
+    },
+  },
+  {
+    name: 'Sorcerer',
+    hitDie: 6,
+    primaryAbility: 'cha',
+    savingThrows: ['con','cha'],
+    armorProfs: [],
+    weaponProfs: ['Daggers','Darts','Slings','Quarterstaffs','Light crossbows'],
+    spellcasting: 'full',
+    spellcastingAbility: 'cha',
+    skillCount: 2,
+    skillChoices: ['Arcana','Deception','Insight','Intimidation','Persuasion','Religion'],
+    subclassLevel: 1,
+    subclassLabel: 'Sorcerous Origin',
+    subclasses: ['Draconic Bloodline','Wild Magic'],
+    equipment: ['Light crossbow + 20 bolts, or any simple weapon','Component pouch or arcane focus','Dungeoneer\'s or explorer\'s pack','Two daggers'],
+    features: {
+      1: ['Spellcasting','Sorcerous Origin (choose subclass)'],
+      2: ['Font of Magic (Sorcery Points)'],
+      3: ['Metamagic (choose 2)'],
+      4: ['Ability Score Improvement'],
+      5: [],
+      6: ['Sorcerous Origin Feature'],
+    },
+  },
+  {
+    name: 'Warlock',
+    hitDie: 8,
+    primaryAbility: 'cha',
+    savingThrows: ['wis','cha'],
+    armorProfs: ['Light'],
+    weaponProfs: ['Simple'],
+    spellcasting: 'pact',
+    spellcastingAbility: 'cha',
+    skillCount: 2,
+    skillChoices: ['Arcana','Deception','History','Intimidation','Investigation','Nature','Religion'],
+    subclassLevel: 1,
+    subclassLabel: 'Otherworldly Patron',
+    subclasses: ['The Archfey','The Fiend','The Great Old One'],
+    equipment: ['Light crossbow + 20 bolts, or any simple weapon','Component pouch or arcane focus','Scholar\'s or dungeoneer\'s pack','Leather armor, any simple weapon, two daggers'],
+    features: {
+      1: ['Otherworldly Patron (choose subclass)','Pact Magic'],
+      2: ['Eldritch Invocations (choose 2)'],
+      3: ['Pact Boon'],
+      4: ['Ability Score Improvement'],
+      5: [],
+      6: ['Patron Feature'],
+    },
+  },
+  {
+    name: 'Wizard',
+    hitDie: 6,
+    primaryAbility: 'int',
+    savingThrows: ['int','wis'],
+    armorProfs: [],
+    weaponProfs: ['Daggers','Darts','Slings','Quarterstaffs','Light crossbows'],
+    spellcasting: 'full',
+    spellcastingAbility: 'int',
+    skillCount: 2,
+    skillChoices: ['Arcana','History','Insight','Investigation','Medicine','Religion'],
+    subclassLevel: 2,
+    subclassLabel: 'Arcane Tradition',
+    subclasses: ['School of Abjuration','School of Conjuration','School of Divination','School of Enchantment','School of Evocation','School of Illusion','School of Necromancy','School of Transmutation'],
+    equipment: ['Quarterstaff or dagger','Component pouch or arcane focus','Scholar\'s or explorer\'s pack','Spellbook'],
+    features: {
+      1: ['Spellcasting','Arcane Recovery'],
+      2: ['Arcane Tradition (choose subclass)'],
+      3: [],
+      4: ['Ability Score Improvement'],
+      5: [],
+      6: ['Arcane Tradition Feature'],
+    },
+  },
+]
+
+// ── Backgrounds ───────────────────────────────────────────────────────────────
+export const BACKGROUNDS = [
+  {
+    name: 'Acolyte',
+    skills: ['Insight','Religion'],
+    tools: [],
+    languages: 2,
+    equipment: 'Holy symbol, prayer book, 5 sticks of incense, vestments, common clothes, 15 gp',
+    feature: 'Shelter of the Faithful',
+    traits: ['I idolize a hero of my faith.','I can find common ground between the fiercest enemies.','I see omens in every event and action.','Nothing can shake my optimistic attitude.','I quote sacred texts in almost every situation.','I am tolerant of other faiths.','I\'ve enjoyed fine food so long I have trouble roughing it.','I\'ve spent so long in the temple that I have little experience dealing with people.'],
+    ideals: ['Tradition','Charity','Change','Power','Faith','Aspiration'],
+    bonds: ['I would die to recover an ancient relic of my faith.','I owe my life to the priest who took me in.','Everything I do is for the common people.','I will someday get revenge on the corrupt temple hierarchy.','I owe my life to a fighter who saved me on a pilgrimage.','I seek to preserve a sacred text that my enemies consider heretical.'],
+    flaws: ['I judge others harshly, and myself even more so.','I put too much trust in those in power.','My piety sometimes leads me to blindly trust those who profess faith.','I am inflexible in my thinking.','I am suspicious of strangers and expect the worst.','Once I pick a goal, I become obsessed with it to the detriment of everything else.'],
+  },
+  {
+    name: 'Charlatan',
+    skills: ['Deception','Sleight of Hand'],
+    tools: ['Disguise kit','Forgery kit'],
+    languages: 0,
+    equipment: 'Fine clothes, disguise kit, tools of the con, 15 gp',
+    feature: 'False Identity',
+    traits: ['I fall in and out of love easily.','I swindle people who deserve it.','I\'m a born gambler.','I lie about almost everything, even when there\'s no good reason to.','Sarcasm and insults are my weapons of choice.','I keep multiple holy symbols and pray to whichever god might help me.','I pocket anything I see that might have some value.','It\'s not stealing if I need it more than someone else.'],
+    ideals: ['Independence','Fairness','Charity','Creativity','Friendship','Aspiration'],
+    bonds: ['I fleeced the wrong person and must work to right my wrongs.','I owe everything to my mentor.','Somewhere out there, I have a child who doesn\'t know me.','I come from a noble family and one day I\'ll reclaim my lands.','A powerful person killed someone I loved, so I steal from them.','I will become the greatest thief that ever lived.'],
+    flaws: ['I can\'t resist a pretty face.','I\'m always in debt.','I\'m convinced that no one could ever fool me.','I\'m too greedy for my own good.','I can\'t resist adding to my collection of curiosities.','I\'m never satisfied with what I have.'],
+  },
+  {
+    name: 'Criminal',
+    skills: ['Deception','Stealth'],
+    tools: ['One type of gaming set','Thieves\' tools'],
+    languages: 0,
+    equipment: 'Crowbar, dark common clothes with hood, 15 gp',
+    feature: 'Criminal Contact',
+    traits: ['I always have a plan for when things go wrong.','I am always calm, no matter what the situation.','The first thing I do in a new place is note the exits.','I am incredibly slow to trust.','I don\'t pay attention to the risks in a situation.','The best way to get me to do something is to tell me I can\'t do it.','I blow up at the slightest insult.','I am genuinely sorry for what I do and carry that guilt with me.'],
+    ideals: ['Honor','Freedom','Charity','Greed','People','Redemption'],
+    bonds: ['I\'m trying to pay off an old debt I owe to a generous benefactor.','My ill-gotten gains go to support my family.','Something important was taken from me, and I aim to steal it back.','I will become the greatest thief that ever lived.','I\'m guilty of a terrible crime. I hope I can redeem myself.','Someone I loved died because of a mistake I made.'],
+    flaws: ['When I see something valuable, I can\'t think about anything but how to steal it.','When faced with a choice between money and my friends, I usually choose money.','If there\'s a plan, I\'ll forget it. If I don\'t forget it, I\'ll ignore it.','I have a "tell" that reveals when I\'m lying.','I turn tail and run when things look bad.','An innocent person is in prison for a crime that I committed.'],
+  },
+  {
+    name: 'Entertainer',
+    skills: ['Acrobatics','Performance'],
+    tools: ['Disguise kit','One type of musical instrument'],
+    languages: 0,
+    equipment: 'Musical instrument, favor of an admirer, costume, 15 gp',
+    feature: 'By Popular Demand',
+    traits: ['I know a story relevant to almost every situation.','Whenever I come to a new place, I collect local rumors and spread gossip.','I\'m a hopeless romantic, always searching for that special someone.','Nobody stays angry at me for long.','I love a good insult, even one directed at me.','I get bitter if I\'m not the center of attention.','I\'ll settle for nothing less than perfection.','I change my mood or my mind as quickly as I change key in a song.'],
+    ideals: ['Beauty','Tradition','Creativity','Greed','People','Honesty'],
+    bonds: ['My instrument is my most treasured possession.','Someone stole my previous instrument and I\'m going to get it back.','I want to be famous, whatever it takes.','I idolize a hero of the old stories.','I will do anything to prove myself superior to my hated rival.','I would do anything for the other members of my old troupe.'],
+    flaws: ['I\'ll do anything to win fame and renown.','I\'m a sucker for a pretty face.','A scandal prevents me from going home.','I once satirized a noble who still wants my head.','I have trouble keeping my true feelings hidden.','Despite my best efforts, I am unreliable to my friends.'],
+  },
+  {
+    name: 'Folk Hero',
+    skills: ['Animal Handling','Survival'],
+    tools: ['One type of artisan\'s tools','Vehicles (land)'],
+    languages: 0,
+    equipment: 'Artisan\'s tools, shovel, iron pot, common clothes, 10 gp',
+    feature: 'Rustic Hospitality',
+    traits: ['I judge people by their actions, not their words.','If someone is in trouble, I\'m always ready to lend help.','When I set my mind to something, I follow through no matter what.','I have a strong sense of fair play.','I\'m confident in my own abilities and do what I can to instill confidence in others.','Thinking is for other people. I prefer action.','I misuse long words in an attempt to sound smarter.','I get bored easily. When am I going to get on with my destiny?'],
+    ideals: ['Respect','Fairness','Freedom','Might','Sincerity','Destiny'],
+    bonds: ['I have a family, but I have no idea where they are.','I worked the land and I love the land.','A proud noble once gave me a horrible beating and I will take my revenge on his entire family.','My tools are symbols of my past life, and I carry them so I never forget my roots.','I protect those who cannot protect themselves.','I wish my childhood sweetheart had come with me to pursue my destiny.'],
+    flaws: ['The tyrant who rules my land will stop at nothing to see me killed.','I\'m convinced of the significance of my destiny and blind to my shortcomings.','The people who knew me when I was young know my shameful secret.','I have a weakness for the vices of the city.','Secretly, I believe that things would be better if I were in charge.','I have trouble trusting in my allies.'],
+  },
+  {
+    name: 'Guild Artisan',
+    skills: ['Insight','Persuasion'],
+    tools: ['One type of artisan\'s tools'],
+    languages: 1,
+    equipment: 'Artisan\'s tools, letter of introduction from guild, traveler\'s clothes, 15 gp',
+    feature: 'Guild Membership',
+    traits: ['I believe that anything worth doing is worth doing right.','I\'m rude to people who lack my commitment to hard work.','I like to talk at length about my profession.','I don\'t part with my money easily.','I\'m well known for my work, and I want to make sure everyone appreciates it.','I\'m full of witty aphorisms.','I\'m always trying to come up with new designs and improvements.','I\'m not great at meeting new people.'],
+    ideals: ['Community','Generosity','Freedom','Greed','People','Aspiration'],
+    bonds: ['The workshop where I learned my trade is the most important place in the world.','I created a great work for someone, and then found out they intended to use it for evil.','I owe the guild a great debt for forging me into who I am today.','I pursue wealth to secure someone\'s love.','One day I will return to my guild and prove I am the greatest of them all.','I will get revenge on the evil forces that destroyed my guild.'],
+    flaws: ['I\'ll do anything to get my hands on something rare or priceless.','I\'m quick to assume that someone is trying to cheat me.','No one must ever learn that I once stole from the guild vault.','I\'m never satisfied with what I have—I always want more.','I would kill to acquire a legendary artifact.','I\'m horribly jealous of anyone who can outshine my handiwork.'],
+  },
+  {
+    name: 'Hermit',
+    skills: ['Medicine','Religion'],
+    tools: ['Herbalism kit'],
+    languages: 1,
+    equipment: 'Scroll case stuffed with notes, winter blanket, common clothes, herbalism kit, 5 gp',
+    feature: 'Discovery',
+    traits: ['I\'ve been isolated for so long that I rarely speak, preferring gestures.','I am utterly serene, even in the face of disaster.','The leader of my community had something wise to say on every topic.','I feel tremendous empathy for all who suffer.','I\'m oblivious to etiquette and social expectations.','I connect everything that happens to me to a grand cosmic plan.','I often get lost in my own thoughts and contemplation.','I am working on a grand philosophical theory.'],
+    ideals: ['Greater Good','Logic','Free Thinking','Power','Live and Let Live','Self-Knowledge'],
+    bonds: ['Nothing is more important than the other members of my hermitage.','I entered seclusion to hide from the ones who might still be hunting me.','I\'m still seeking the enlightenment I pursued in my seclusion.','I entered seclusion because I loved someone I could never have.','My isolation gave me great insight into a great evil that only I can destroy.','I have a family and have left them behind in search of something greater.'],
+    flaws: ['Now that I\'ve returned, I enjoy the pleasures of civilization a little too much.','I harbor dark thoughts that my isolation failed to quell.','I am dogmatic in my thinking.','I let my need to win arguments override friendships and harmony.','I\'d risk too much to uncover a lost bit of knowledge.','I like keeping secrets and won\'t share them with anyone.'],
+  },
+  {
+    name: 'Noble',
+    skills: ['History','Persuasion'],
+    tools: ['One type of gaming set'],
+    languages: 1,
+    equipment: 'Fine clothes, signet ring, scroll of pedigree, purse with 25 gp',
+    feature: 'Position of Privilege',
+    traits: ['My eloquent flattery makes everyone I talk to feel like the most wonderful person in the world.','The common folk love me for my kindness and generosity.','No one could doubt by looking at my regal bearing that I am a cut above the unwashed masses.','I take great pains to always look my best.','I don\'t like to get my hands dirty.','Despite my noble birth, I do not place myself above other folk.','My favor, once lost, is lost forever.','If you do me an injury, I will crush you, ruin your name, and salt your fields.'],
+    ideals: ['Respect','Responsibility','Independence','Power','Family','Noble Obligation'],
+    bonds: ['I will face any challenge to win approval of my family.','My house\'s alliance with another noble family must be sustained at all costs.','Nothing is more important than the other members of my family.','I am in love with a commoner, but my family disapproves.','My loyalty to my sovereign is unwavering.','The common folk must see me as a hero of the people.'],
+    flaws: ['I secretly believe that everyone is beneath me.','I hide a truly scandalous secret that could ruin my family forever.','I too often hear veiled insults and threats in every word addressed to me.','I have an insatiable desire for carnal pleasures.','In fact, the world does revolve around me.','By my words and actions, I often bring shame to my family.'],
+  },
+  {
+    name: 'Outlander',
+    skills: ['Athletics','Survival'],
+    tools: ['One type of musical instrument'],
+    languages: 1,
+    equipment: 'Staff, hunting trap, trophy from an animal kill, traveler\'s clothes, 10 gp',
+    feature: 'Wanderer',
+    traits: ['I\'m driven by a wanderlust that led me away from home.','I watch over my friends as if they were a litter of newborn pups.','I once ran 25 miles without stopping to warn my clan of an approaching orc horde.','I have a lesson for every situation, drawn from observing nature.','I place no stock in wealthy or well-mannered folk.','I\'m always picking things up, absently fiddling with them, and sometimes accidentally breaking them.','I feel far more comfortable around animals than people.','I was, in fact, raised by wolves.'],
+    ideals: ['Change','Greater Good','Honor','Might','Nature','Glory'],
+    bonds: ['My family, clan, or tribe is the most important thing in my life.','An injury to the unspoiled wilderness is an injury to me.','I will bring terrible wrath down on the evildoers who destroyed my homeland.','I am the last of my tribe, and it is up to me to ensure their stories survive.','I suffer awful visions of a coming disaster and will do anything to prevent it.','It is my duty to provide for and protect those who cannot provide for themselves.'],
+    flaws: ['I am too enamored of ale, wine, and other intoxicants.','There\'s no room for caution in a life lived to the fullest.','I remember every insult I\'ve received and nurse a silent resentment.','I am slow to trust members of other races, tribes, and societies.','Violence is my answer to almost any challenge.','Don\'t expect me to save those who can\'t save themselves. It is nature\'s way.'],
+  },
+  {
+    name: 'Sage',
+    skills: ['Arcana','History'],
+    tools: [],
+    languages: 2,
+    equipment: 'Bottle of black ink, quill, small knife, letter from a dead colleague, common clothes, 10 gp',
+    feature: 'Researcher',
+    traits: ['I use polysyllabic words that convey the impression of great erudition.','I\'ve read every book in the world\'s greatest libraries—or I like to boast that I have.','I\'m used to helping out those who aren\'t as smart as I am.','There\'s nothing I like more than a good mystery.','I\'m willing to listen to every side of an argument before I make my own judgment.','I... speak... slowly... when talking to idiots.','I am horribly, horribly awkward in social situations.','I\'m convinced that people are always trying to steal my secrets.'],
+    ideals: ['Knowledge','Beauty','Logic','No Limits','Power','Self-Improvement'],
+    bonds: ['It is my duty to protect my students.','I have an ancient text that holds terrible secrets that must not fall into the wrong hands.','I work to preserve a library, university, or scriptorium.','My life\'s work is a series of tomes related to a specific field of lore.','I\'ve been searching my whole life for the answer to a certain question.','I sold my soul for knowledge. I hope to do great deeds and win it back.'],
+    flaws: ['I am easily distracted by the promise of information.','Most people scream and run when they see a demon. I stop and take notes.','Unlocking an ancient mystery is worth the price of a civilization.','I overlook obvious solutions in favor of complicated ones.','I speak without really thinking through my words.','I can\'t keep a secret to save my life, or anyone else\'s.'],
+  },
+  {
+    name: 'Sailor',
+    skills: ['Athletics','Perception'],
+    tools: ['Navigator\'s tools','Vehicles (water)'],
+    languages: 0,
+    equipment: 'Belaying pin (club), 50 feet of silk rope, lucky charm, common clothes, 10 gp',
+    feature: 'Ship\'s Passage',
+    traits: ['My friends know they can rely on me, no matter what.','I work hard so that I can play hard when the work is done.','I enjoy sailing into new ports and making new friends.','I stretch the truth for the sake of a good story.','To me, a tavern brawl is a nice way to get to know a new city.','I never pass up a friendly wager.','My language is as foul as an oilcan of snakes.','I like a job well done, especially if I can convince someone else to do it.'],
+    ideals: ['Respect','Fairness','Freedom','Mastery','People','Aspiration'],
+    bonds: ['I\'m loyal to my captain first, everything else second.','The ship is most important—crewmates and captains come and go.','I\'ll always remember my first ship.','In a harbor town, I have a paramour whose eyes nearly stole me from the sea.','I was cheated out of my fair share of the profits, and I want to get my due.','Ruthless pirates murdered my captain and crewmates; I seek revenge.'],
+    flaws: ['I follow orders, even if I think they\'re wrong.','I\'ll say anything to avoid having to do extra work.','Once someone questions my courage, I never back down no matter how dangerous.','Once I start drinking, it\'s hard for me to stop.','I can\'t help but pocket loose coins and other trinkets.','My pride will probably lead to my destruction.'],
+  },
+  {
+    name: 'Soldier',
+    skills: ['Athletics','Intimidation'],
+    tools: ['One type of gaming set','Vehicles (land)'],
+    languages: 0,
+    equipment: 'Insignia of rank, trophy from fallen enemy, deck of cards, common clothes, 10 gp',
+    feature: 'Military Rank',
+    traits: ['I\'m always polite and respectful.','I\'m haunted by memories of war. I dream of them.','I\'ve lost too many friends, and I\'m slow to make new ones.','I\'m full of inspiring and cautionary tales from my military experience.','I can stare down a hellhound without flinching.','I enjoy being strong and like breaking things.','I have a crude sense of humor.','I face problems head-on. A simple direct solution is the best.'],
+    ideals: ['Greater Good','Responsibility','Independence','Might','Live and Let Live','Nation'],
+    bonds: ['I would still lay down my life for the people I served with.','Someone saved my life on the battlefield. To this day, I will never leave a friend behind.','My honor is my life.','I\'ll never forget the crushing defeat my company suffered and the enemies who dealt it.','Those who fight beside me are those worth dying for.','I fight for those who cannot fight for themselves.'],
+    flaws: ['The monstrous enemy we faced in battle still leaves me quivering with fear.','I have little respect for anyone who is not a proven warrior.','I made a terrible mistake in battle that cost many lives—and I would do anything to keep it secret.','My hatred of my enemies is blinding and irrational.','I obey the law, even if the law causes misery.','I\'d rather eat my armor than admit when I\'m wrong.'],
+  },
+  {
+    name: 'Urchin',
+    skills: ['Sleight of Hand','Stealth'],
+    tools: ['Disguise kit','Thieves\' tools'],
+    languages: 0,
+    equipment: 'Small knife, map of city, pet mouse, token of parents, common clothes, 10 gp',
+    feature: 'City Secrets',
+    traits: ['I hide scraps of food and trinkets away in my pockets.','I ask a lot of questions.','I like to squeeze into small places where no one else can get to me.','I sleep with my back to a wall or tree.','I am a pack rat who never throws anything away.','I try to never draw attention to myself.','I have trouble trusting in the motives of others.','I talk too much and at inopportune times.'],
+    ideals: ['Respect','Community','Change','Retribution','People','Aspiration'],
+    bonds: ['My town or city is my home, and I\'ll fight to defend it.','I sponsor an orphanage to keep others from enduring what I was forced to endure.','I owe my survival to another urchin who taught me to live on the streets.','I owe a debt I can never repay to the person who took pity on me.','I escaped my life of poverty by robbing an important person.','No one else should have to suffer the way I did.'],
+    flaws: ['Gold seems like a lot of money to me, and I\'ll do just about anything for more of it.','I will never fully trust anyone other than myself.','I\'d rather kill someone in their sleep than fight fair.','It\'s not stealing if I need it more than someone else.','People who can\'t take care of themselves get what they deserve.','I\'m never satisfied with what I have.'],
+  },
+]
+
+// ── Ability Score Methods ─────────────────────────────────────────────────────
+export const STANDARD_ARRAY = [15, 14, 13, 12, 10, 8]
+
+export const POINT_BUY_COSTS = { 8:0,9:1,10:2,11:3,12:4,13:5,14:7,15:9 }
+export const POINT_BUY_BUDGET = 27
+export const POINT_BUY_MIN = 8
+export const POINT_BUY_MAX = 15
+
+// ── Languages ─────────────────────────────────────────────────────────────────
+export const LANGUAGES = [
+  'Abyssal','Celestial','Common','Deep Speech','Draconic','Druidic','Dwarvish',
+  'Elvish','Giant','Gnomish','Goblin','Halfling','Infernal','Orc','Primordial',
+  'Sylvan','Thieves\' Cant','Undercommon',
+]
+
+// ── Tool Proficiencies ────────────────────────────────────────────────────────
+export const TOOLS = [
+  'Alchemist\'s supplies','Brewer\'s supplies','Calligrapher\'s supplies',
+  'Carpenter\'s tools','Cartographer\'s tools','Cobbler\'s tools','Cook\'s utensils',
+  'Glassblower\'s tools','Jeweler\'s tools','Leatherworker\'s tools','Mason\'s tools',
+  'Painter\'s supplies','Potter\'s tools','Smith\'s tools','Tinker\'s tools',
+  'Weaver\'s tools','Woodcarver\'s tools',
+  'Disguise kit','Forgery kit','Herbalism kit','Navigator\'s tools','Poisoner\'s kit',
+  'Thieves\' tools',
+  'Dice set','Dragonchess set','Playing card set','Three-Dragon Ante set',
+  'Bagpipes','Drum','Dulcimer','Flute','Lute','Lyre','Horn','Pan flute','Shawm','Viol',
+  'Vehicles (land)','Vehicles (water)',
+]
+
+// ── XP Thresholds per Level ───────────────────────────────────────────────────
+export const XP_LEVELS = [
+  0, 300, 900, 2700, 6500, 14000, 23000, 34000, 48000, 64000,
+  85000, 100000, 120000, 140000, 165000, 195000, 225000, 265000, 305000, 355000,
+]
+
+export function xpToLevel(xp) {
+  let lvl = 1
+  for (let i = 0; i < XP_LEVELS.length; i++) {
+    if (xp >= XP_LEVELS[i]) lvl = i + 1
+  }
+  return Math.min(lvl, 20)
+}

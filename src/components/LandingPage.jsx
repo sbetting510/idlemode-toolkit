@@ -136,7 +136,28 @@ export default function LandingPage({ onEnter }) {
               </div>
               <p style={{ fontSize: 13, color: 'var(--parch2)', lineHeight: 1.6, margin: 0 }}>
                 Track your entire campaign — characters, sessions, encounters,
-                loot, NPCs, and quests. All stored locally in your browser.
+                loot, NPCs, and quests. Expand any character card to see a full
+                DM reference view with saving throws, skills, spell slots, and
+                more. All stored locally in your browser.
+              </p>
+            </div>
+
+            <div style={cardStyle}>
+              <div style={{ fontSize: 22, marginBottom: 8 }}>🧙</div>
+              <div style={{ fontSize: 14, fontWeight: 'bold', color: 'var(--gold)', marginBottom: 6 }}>
+                Character Builder
+                <span style={{
+                  background: 'rgba(30,100,30,0.3)', color: '#90c870',
+                  border: '1px solid rgba(30,100,30,0.5)',
+                  borderRadius: 3, fontSize: 9, fontFamily: 'sans-serif',
+                  padding: '1px 5px', marginLeft: 6, verticalAlign: 'middle', fontWeight: 'bold',
+                }}>FREE</span>
+              </div>
+              <p style={{ fontSize: 13, color: 'var(--parch2)', lineHeight: 1.6, margin: 0 }}>
+                Build a full 5e character in 10 guided steps — race, class,
+                background, ability scores (Standard Array, Point Buy, or Manual),
+                skills, spells, equipment, and appearance. Saves directly to the
+                Campaign Manager, with print-to-PDF export.
               </p>
             </div>
           </div>

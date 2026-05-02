@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { useCampaign } from '../../hooks/useCampaign'
+import { printCharacter } from './CharacterBuilder'
+import { ABILITY_SHORT, ABILITY_LABELS, ABILITIES, SKILLS, PROF_BONUS, abilityMod, modStr } from '../../data/characterData'
 
 const MODULES = [
   { id: 'overview',   label: 'Overview',    icon: '⚔' },
@@ -246,12 +248,187 @@ function Overview({ campaign, updateMeta, resetCampaign }) {
   )
 }
 
+// ── DM Panel (expanded character details) ──
+function DMPanel({ c, module }) {
+  const prof = c.profBonus || PROF_BONUS[c.level] || 2
+  const [hpInput, setHpInput] = useState(String(c.hp || 0))
+
+  function saveHp() {
+    const val = parseInt(hpInput)
+    if (!isNaN(val)) module.update(c.id, { hp: val })
+  }
+
+  // Saving throws
+  const savingThrows = ABILITIES.map(ab => {
+    const proficient = (c.savingThrows || []).includes(ab)
+    const bonus = abilityMod(c[ab] || 10) + (proficient ? prof : 0)
+    return { ab, proficient, bonus }
+  })
+
+  // All skills with bonuses
+  const skillRows = SKILLS.map(skill => {
+    const proficient = (c.skillProfs || []).includes(skill.name)
+    const bonus = abilityMod(c[skill.ability] || 10) + (proficient ? prof : 0)
+    return { ...skill, proficient, bonus }
+  })
+
+  // Spell slots — stored as array [l1count, l2count, ...]
+  const slots = Array.isArray(c.spellSlots) ? c.spellSlots : []
+  const hasSlots = slots.some(n => n > 0)
+
+  const dmLabel = { fontSize:9, color:'var(--gold)', fontFamily:'sans-serif', textTransform:'uppercase', letterSpacing:'.06em', marginBottom:4 }
+  const divider = { borderTop:'1px solid rgba(255,255,255,.06)', marginTop:12, paddingTop:12 }
+
+  return (
+    <div style={{ marginTop:10, ...divider }}>
+
+      {/* HP editor + Passive Perception */}
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:12 }}>
+        <div>
+          <div style={dmLabel}>Current HP</div>
+          <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+            <input
+              type="number"
+              value={hpInput}
+              onChange={e => setHpInput(e.target.value)}
+              onBlur={saveHp}
+              onKeyDown={e => e.key === 'Enter' && saveHp()}
+              style={{ ...inputStyle, width:70, fontSize:16, fontWeight:'bold', color:'#f09595', textAlign:'center', padding:'4px 6px' }}
+            />
+            <span style={{ fontSize:13, color:'var(--muted)' }}>/ {c.maxHp || '—'}</span>
+          </div>
+        </div>
+        <div>
+          <div style={dmLabel}>Passive Perception</div>
+          <div style={{ fontSize:28, fontWeight:'bold', color:'var(--gold)', lineHeight:1 }}>
+            {c.passivePerception || (10 + abilityMod(c.wis || 10))}
+          </div>
+        </div>
+      </div>
+
+      {/* Saving Throws */}
+      <div style={divider}>
+        <div style={dmLabel}>Saving Throws</div>
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:4 }}>
+          {savingThrows.map(({ ab, proficient, bonus }) => (
+            <div key={ab} style={{
+              display:'flex', alignItems:'center', gap:6, padding:'4px 8px',
+              borderRadius:4, background:'rgba(255,255,255,.02)',
+              border:`1px solid ${proficient ? 'rgba(144,184,248,.3)' : 'var(--border)'}`,
+            }}>
+              <div style={{ width:8, height:8, borderRadius:'50%', flexShrink:0,
+                background: proficient ? '#90b8f8' : 'transparent',
+                border:`1.5px solid ${proficient ? '#90b8f8' : 'var(--muted)'}`,
+              }} />
+              <span style={{ fontSize:11, color:'var(--parch2)', flex:1 }}>{ABILITY_SHORT[ab]}</span>
+              <span style={{ fontSize:12, fontFamily:'sans-serif', fontWeight:'bold', color: bonus >= 0 ? '#90b8f8' : '#f09595' }}>
+                {bonus >= 0 ? '+' : ''}{bonus}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Skills */}
+      <div style={divider}>
+        <div style={dmLabel}>Skills</div>
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:3 }}>
+          {skillRows.map(({ name, ability, proficient, bonus }) => (
+            <div key={name} style={{
+              display:'flex', alignItems:'center', gap:6, padding:'3px 6px',
+              borderRadius:4, opacity: proficient ? 1 : 0.45,
+              background: proficient ? 'rgba(144,200,112,.06)' : 'transparent',
+            }}>
+              <div style={{ width:7, height:7, borderRadius:'50%', flexShrink:0,
+                background: proficient ? '#90c870' : 'transparent',
+                border:`1.5px solid ${proficient ? '#90c870' : 'var(--muted)'}`,
+              }} />
+              <span style={{ fontSize:11, color:'var(--parch2)', flex:1 }}>{name}</span>
+              <span style={{ fontSize:10, color:'var(--muted)', fontFamily:'sans-serif' }}>{ABILITY_SHORT[ability]}</span>
+              <span style={{ fontSize:11, fontFamily:'sans-serif', fontWeight: proficient ? 'bold' : 'normal',
+                color: bonus >= 0 ? (proficient ? '#90c870' : 'var(--muted)') : '#f09595', minWidth:22, textAlign:'right',
+              }}>{bonus >= 0 ? '+' : ''}{bonus}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Spell Slots */}
+      {hasSlots && (
+        <div style={divider}>
+          <div style={dmLabel}>Spell Slots</div>
+          <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
+            {slots.map((count, i) => count > 0 ? (
+              <div key={i} style={{
+                background:'rgba(208,144,248,.1)', border:'1px solid rgba(208,144,248,.3)',
+                borderRadius:4, padding:'3px 10px', textAlign:'center',
+              }}>
+                <div style={{ fontSize:13, fontWeight:'bold', color:'#d090f8' }}>{count}</div>
+                <div style={{ fontSize:9, color:'var(--muted)', fontFamily:'sans-serif' }}>L{i+1}</div>
+              </div>
+            ) : null)}
+            {(c.cantrips?.length > 0) && (
+              <div style={{ background:'rgba(208,144,248,.06)', border:'1px solid rgba(208,144,248,.2)', borderRadius:4, padding:'3px 10px', textAlign:'center' }}>
+                <div style={{ fontSize:13, fontWeight:'bold', color:'#d090f8' }}>{c.cantrips.length}</div>
+                <div style={{ fontSize:9, color:'var(--muted)', fontFamily:'sans-serif' }}>Cantrips</div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Languages + Equipment */}
+      {(c.languages?.length > 0 || c.equipment?.length > 0) && (
+        <div style={divider}>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+            {c.languages?.length > 0 && (
+              <div>
+                <div style={dmLabel}>Languages</div>
+                <div style={{ fontSize:11, color:'var(--parch2)', lineHeight:1.7 }}>{c.languages.join(', ')}</div>
+              </div>
+            )}
+            {c.equipment?.length > 0 && (
+              <div>
+                <div style={dmLabel}>Equipment</div>
+                <div style={{ fontSize:11, color:'var(--parch2)', lineHeight:1.7 }}>{c.equipment.join(', ')}</div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Personality */}
+      {(c.personalityTrait || c.ideal || c.bond || c.flaw) && (
+        <div style={divider}>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
+            {[['personalityTrait','Trait'],['ideal','Ideal'],['bond','Bond'],['flaw','Flaw']].map(([field, label]) => c[field] ? (
+              <div key={field}>
+                <div style={dmLabel}>{label}</div>
+                <div style={{ fontSize:11, color:'var(--parch2)', fontStyle:'italic' }}>{c[field]}</div>
+              </div>
+            ) : null)}
+          </div>
+        </div>
+      )}
+
+      {/* Backstory */}
+      {c.backstory && (
+        <div style={divider}>
+          <div style={dmLabel}>Backstory</div>
+          <div style={{ fontSize:11, color:'var(--parch2)', lineHeight:1.6 }}>{c.backstory}</div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── Characters ──
-function Characters({ campaign, module }) {
+function Characters({ campaign, module, onOpenBuilder }) {
   const [adding, setAdding]   = useState(false)
   const [editing, setEditing] = useState(null)
+  const [expandedIds, setExpandedIds] = useState(new Set())
   const blank = { name:'', race:'', class:'', level:1, hp:'', maxHp:'', ac:'', status:'Active', notes:'' }
-  const [form, setForm]       = useState(blank)
+  const [form, setForm] = useState(blank)
 
   function submit() {
     if (!form.name.trim()) return
@@ -262,74 +439,164 @@ function Characters({ campaign, module }) {
 
   function startEdit(c) {
     setForm({ name:c.name, race:c.race||'', class:c.class||'', level:c.level||1, hp:c.hp||'', maxHp:c.maxHp||'', ac:c.ac||'', status:c.status||'Active', notes:c.notes||'' })
-    setEditing(c.id)
-    setAdding(false)
+    setEditing(c.id); setAdding(false)
   }
 
   function cancel() { setAdding(false); setEditing(null); setForm(blank) }
 
+  function toggleExpand(id) {
+    setExpandedIds(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+
+  function isBuilderChar(c) { return c.str !== undefined && c.dex !== undefined }
+
   return (
     <div>
-      <SectionHeader title="Characters" onAdd={() => { setAdding(true); setEditing(null); setForm(blank) }} />
+      <SectionHeader
+        title="Characters"
+        onAdd={() => { setAdding(true); setEditing(null); setForm(blank) }}
+        addLabel={onOpenBuilder ? '+ Quick add' : '+ Add'}
+      />
 
-  {(adding || editing) && (
-    <div style={{ ...cardStyle, borderLeft: '3px solid var(--gold)', marginBottom: '1rem' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
-        <Field label="Name *"><input style={inputStyle} value={form.name} onChange={e => setForm(f => ({...f, name: e.target.value}))} placeholder="Character name" /></Field>
-        <Field label="Race"><input style={inputStyle} value={form.race} onChange={e => setForm(f => ({...f, race: e.target.value}))} placeholder="e.g. Human, Elf..." /></Field>
-        <Field label="Class"><input style={inputStyle} value={form.class} onChange={e => setForm(f => ({...f, class: e.target.value}))} placeholder="e.g. Fighter, Wizard..." /></Field>
-        <Field label="Level"><input style={{...inputStyle, width:80}} type="number" min="1" max="20" value={form.level} onChange={e => setForm(f => ({...f, level: parseInt(e.target.value)||1}))} /></Field>
-        <Field label="Current HP"><input style={{...inputStyle}} type="number" value={form.hp} onChange={e => setForm(f => ({...f, hp: e.target.value}))} /></Field>
-        <Field label="Max HP"><input style={{...inputStyle}} type="number" value={form.maxHp} onChange={e => setForm(f => ({...f, maxHp: e.target.value}))} /></Field>
-        <Field label="AC"><input style={{...inputStyle, width:80}} type="number" value={form.ac} onChange={e => setForm(f => ({...f, ac: e.target.value}))} /></Field>
-        <Field label="Status">
-          <select style={selectStyle} value={form.status} onChange={e => setForm(f => ({...f, status: e.target.value}))}>
-            {CHAR_STATUSES.map(s => <option key={s} value={s} style={{background:'#16213e',color:'#f5f0e1'}}>{s}</option>)}
-          </select>
-        </Field>
-      </div>
-      <Field label="Notes"><textarea style={{...inputStyle, resize:'vertical', minHeight:60}} value={form.notes} onChange={e => setForm(f => ({...f, notes: e.target.value}))} /></Field>
-      <div style={{ display:'flex', gap:8, marginTop:8 }}>
-        <button style={btnPrimary} onClick={submit}>{editing ? 'Save changes' : 'Add character'}</button>
-        <button style={btnGhost} onClick={cancel}>Cancel</button>
-      </div>
-    </div>
-  )}
+      {onOpenBuilder && (
+        <div style={{ marginBottom:'0.75rem' }}>
+          <button
+            style={{ ...btnPrimary, background:'rgba(201,168,76,.15)', border:'1px solid var(--gold)', color:'var(--gold)' }}
+            onClick={() => onOpenBuilder(null)}
+          >
+            ⚔ Build Character (Wizard)
+          </button>
+        </div>
+      )}
+
+      {(adding || editing) && (
+        <div style={{ ...cardStyle, borderLeft:'3px solid var(--gold)', marginBottom:'1rem' }}>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:8 }}>
+            <Field label="Name *"><input style={inputStyle} value={form.name} onChange={e => setForm(f => ({...f, name:e.target.value}))} placeholder="Character name" /></Field>
+            <Field label="Race"><input style={inputStyle} value={form.race} onChange={e => setForm(f => ({...f, race:e.target.value}))} placeholder="e.g. Human, Elf..." /></Field>
+            <Field label="Class"><input style={inputStyle} value={form.class} onChange={e => setForm(f => ({...f, class:e.target.value}))} placeholder="e.g. Fighter, Wizard..." /></Field>
+            <Field label="Level"><input style={{...inputStyle, width:80}} type="number" min="1" max="20" value={form.level} onChange={e => setForm(f => ({...f, level:parseInt(e.target.value)||1}))} /></Field>
+            <Field label="Current HP"><input style={inputStyle} type="number" value={form.hp} onChange={e => setForm(f => ({...f, hp:e.target.value}))} /></Field>
+            <Field label="Max HP"><input style={inputStyle} type="number" value={form.maxHp} onChange={e => setForm(f => ({...f, maxHp:e.target.value}))} /></Field>
+            <Field label="AC"><input style={{...inputStyle, width:80}} type="number" value={form.ac} onChange={e => setForm(f => ({...f, ac:e.target.value}))} /></Field>
+            <Field label="Status">
+              <select style={selectStyle} value={form.status} onChange={e => setForm(f => ({...f, status:e.target.value}))}>
+                {CHAR_STATUSES.map(s => <option key={s} value={s} style={{background:'#16213e',color:'#f5f0e1'}}>{s}</option>)}
+              </select>
+            </Field>
+          </div>
+          <Field label="Notes"><textarea style={{...inputStyle, resize:'vertical', minHeight:60}} value={form.notes} onChange={e => setForm(f => ({...f, notes:e.target.value}))} /></Field>
+          <div style={{ display:'flex', gap:8, marginTop:8 }}>
+            <button style={btnPrimary} onClick={submit}>{editing ? 'Save changes' : 'Add character'}</button>
+            <button style={btnGhost} onClick={cancel}>Cancel</button>
+          </div>
+        </div>
+      )}
 
       {campaign.characters.length === 0 && !adding
-        ? <EmptyState message="No characters yet. Add your party members above." />
+        ? <EmptyState message="No characters yet. Use the wizard to build a full character, or quick-add a simple one." />
         : campaign.characters.map(c => {
-          const hpPct = c.maxHp ? Math.round((parseInt(c.hp)||0) / parseInt(c.maxHp) * 100) : null
-          const barColor = hpPct >= 75 ? '#90c870' : hpPct >= 40 ? '#f5c842' : '#f09595'
+          const hpPct     = c.maxHp ? Math.round((parseInt(c.hp)||0) / parseInt(c.maxHp) * 100) : null
+          const barColor  = hpPct >= 75 ? '#90c870' : hpPct >= 40 ? '#f5c842' : '#f09595'
+          const full      = isBuilderChar(c)
+          const expanded  = expandedIds.has(c.id)
+
           return (
-            <div key={c.id} style={{ ...cardStyle, borderLeft: `3px solid ${charStatusColors[c.status]||'var(--border)'}` }}>
+            <div key={c.id} style={{ ...cardStyle, borderLeft:`3px solid ${charStatusColors[c.status]||'var(--border)'}` }}>
+
+              {/* ── Header row ── */}
               <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:8 }}>
                 <div style={{ flex:1, minWidth:0 }}>
                   <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:4, flexWrap:'wrap' }}>
                     <span style={{ fontSize:15, fontWeight:'bold', color:'var(--gold2)' }}>{c.name}</span>
-                    <StatusBadge status={c.status} colorMap={charStatusColors} />
-                    {c.class && <span style={{ fontSize:12, color:'var(--muted)' }}>{c.race} {c.class}</span>}
-                    {c.level && <span style={{ fontSize:12, color:'var(--gold)', fontFamily:'sans-serif' }}>Lvl {c.level}</span>}
+                    <StatusBadge status={c.status||'Active'} colorMap={charStatusColors} />
+                    {(c.race || c.class) && (
+                      <span style={{ fontSize:12, color:'var(--muted)' }}>
+                        {[c.subrace||c.race, c.subclass||c.class].filter(Boolean).join(' ')}
+                      </span>
+                    )}
+                    {c.level  && <span style={{ fontSize:12, color:'var(--gold)', fontFamily:'sans-serif' }}>Lvl {c.level}</span>}
+                    {c.background && <span style={{ fontSize:11, color:'var(--muted)', fontStyle:'italic' }}>{c.background}</span>}
+                    {c.alignment  && <span style={{ fontSize:11, color:'var(--muted)' }}>{c.alignment}</span>}
                   </div>
+
+                  {/* HP / AC / Speed / Prof / Init */}
                   <div style={{ display:'flex', alignItems:'center', gap:16, flexWrap:'wrap' }}>
                     {c.maxHp && (
                       <div style={{ display:'flex', alignItems:'center', gap:6 }}>
                         <span style={{ fontSize:12, color:'var(--muted)' }}>HP</span>
-                        <span style={{ fontSize:13, fontWeight:'bold', color: barColor }}>{c.hp || 0}/{c.maxHp}</span>
+                        <span style={{ fontSize:13, fontWeight:'bold', color:barColor }}>{c.hp||0}/{c.maxHp}</span>
                         <div style={{ width:60, height:6, background:'rgba(255,255,255,0.1)', borderRadius:3, overflow:'hidden' }}>
-                          <div style={{ width:`${Math.min(hpPct,100)}%`, height:'100%', background:barColor, borderRadius:3, transition:'width 0.3s' }} />
+                          <div style={{ width:`${Math.min(hpPct||0,100)}%`, height:'100%', background:barColor, borderRadius:3, transition:'width 0.3s' }} />
                         </div>
                       </div>
                     )}
-                    {c.ac && <span style={{ fontSize:12, color:'var(--muted)' }}>AC <strong style={{ color:'var(--parch2)' }}>{c.ac}</strong></span>}
+                    {c.ac       && <span style={{ fontSize:12, color:'var(--muted)' }}>AC <strong style={{ color:'var(--parch2)' }}>{c.ac}</strong></span>}
+                    {c.speed    && <span style={{ fontSize:12, color:'var(--muted)' }}>Speed <strong style={{ color:'var(--parch2)' }}>{c.speed}ft</strong></span>}
+                    {c.profBonus && <span style={{ fontSize:12, color:'var(--muted)' }}>Prof <strong style={{ color:'var(--gold)' }}>+{c.profBonus}</strong></span>}
+                    {full && <span style={{ fontSize:12, color:'var(--muted)' }}>PP <strong style={{ color:'var(--parch2)' }}>{c.passivePerception || (10+abilityMod(c.wis||10))}</strong></span>}
                   </div>
-                  {c.notes && <div style={{ fontSize:12, color:'var(--muted)', marginTop:6, fontStyle:'italic' }}>{c.notes}</div>}
                 </div>
-                <div style={{ display:'flex', gap:4, flexShrink:0 }}>
-                  <button style={btnGhost} onClick={() => startEdit(c)}>Edit</button>
+
+                {/* Action buttons */}
+                <div style={{ display:'flex', gap:4, flexShrink:0, flexWrap:'wrap', justifyContent:'flex-end' }}>
+                  {full && (
+                    <button
+                      style={{ ...btnGhost, fontSize:11, color: expanded ? 'var(--gold)' : 'var(--muted)', borderColor: expanded ? 'rgba(201,168,76,.4)' : 'var(--border)' }}
+                      onClick={() => toggleExpand(c.id)}
+                      title={expanded ? 'Collapse DM panel' : 'Expand DM panel'}
+                    >
+                      {expanded ? '▲ Less' : '▼ DM View'}
+                    </button>
+                  )}
+                  {full && onOpenBuilder && (
+                    <button
+                      style={{ ...btnGhost, color:'var(--gold)', borderColor:'rgba(201,168,76,.4)', fontSize:11 }}
+                      onClick={() => onOpenBuilder(c.id)}
+                      title="Edit in Character Builder"
+                    >
+                      ✏ Edit
+                    </button>
+                  )}
+                  {full && (
+                    <button
+                      style={{ ...btnGhost, color:'#90b8f8', borderColor:'rgba(144,184,248,.3)', fontSize:11 }}
+                      onClick={() => printCharacter(c)}
+                      title="Print / export as PDF"
+                    >
+                      🖨 Sheet
+                    </button>
+                  )}
+                  {!full && <button style={btnGhost} onClick={() => startEdit(c)}>Edit</button>}
                   <button style={btnDanger} onClick={() => module.remove(c.id)}>×</button>
                 </div>
               </div>
+
+              {/* ── Ability scores (always visible for builder chars) ── */}
+              {full && (
+                <div style={{ display:'grid', gridTemplateColumns:'repeat(6,1fr)', gap:4, marginTop:10, padding:'8px 0', borderTop:'1px solid rgba(255,255,255,.06)', borderBottom:'1px solid rgba(255,255,255,.06)' }}>
+                  {ABILITIES.map(ab => {
+                    const score = c[ab] || 10
+                    return (
+                      <div key={ab} style={{ textAlign:'center', padding:'4px 2px' }}>
+                        <div style={{ fontSize:9, color:'var(--muted)', fontFamily:'sans-serif', letterSpacing:'.05em', textTransform:'uppercase', marginBottom:2 }}>{ABILITY_SHORT[ab]}</div>
+                        <div style={{ fontSize:16, fontWeight:'bold', color:'var(--gold2)', lineHeight:1 }}>{score}</div>
+                        <div style={{ fontSize:12, color: abilityMod(score)>=0 ? '#90c870' : '#f09595', marginTop:1 }}>{modStr(score)}</div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+
+              {/* ── Expandable DM panel ── */}
+              {full && expanded && <DMPanel c={c} module={module} />}
+
+              {/* Notes (simple chars) */}
+              {!full && c.notes && <div style={{ fontSize:12, color:'var(--muted)', marginTop:6, fontStyle:'italic' }}>{c.notes}</div>}
             </div>
           )
         })
@@ -731,8 +998,8 @@ function Quests({ campaign, module }) {
 }
 
 // ── Main component ──
-export default function CampaignManager() {
-  const [activeModule, setActiveModule] = useState('overview')
+export default function CampaignManager({ onOpenBuilder, initialModule }) {
+  const [activeModule, setActiveModule] = useState(initialModule || 'overview')
   const {
     campaign, updateMeta, resetCampaign,
     characters, sessions, encounters, loot, npcs, quests,
@@ -783,7 +1050,7 @@ export default function CampaignManager() {
       {/* Content */}
       <div style={contentStyle}>
         {activeModule === 'overview'   && <Overview    campaign={campaign} updateMeta={updateMeta} resetCampaign={resetCampaign} />}
-        {activeModule === 'characters' && <Characters  campaign={campaign} module={characters} />}
+        {activeModule === 'characters' && <Characters  campaign={campaign} module={characters} onOpenBuilder={onOpenBuilder} />}
         {activeModule === 'sessions'   && <Sessions    campaign={campaign} module={sessions}   />}
         {activeModule === 'encounters' && <Encounters  campaign={campaign} module={encounters} />}
         {activeModule === 'loot'       && <Loot        campaign={campaign} module={loot}       />}
