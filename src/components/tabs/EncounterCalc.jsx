@@ -6,12 +6,105 @@ import { useCampaign } from '../../hooks/useCampaign'
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2) }
 function d20() { return Math.floor(Math.random() * 20) + 1 }
 
+const COMBAT_STORAGE_KEY = 'idlemode_combat'
+
+function saveCombatState(state) {
+  try { localStorage.setItem(COMBAT_STORAGE_KEY, JSON.stringify(state)) } catch {}
+}
+function loadCombatState() {
+  try { const raw = localStorage.getItem(COMBAT_STORAGE_KEY); return raw ? JSON.parse(raw) : null } catch { return null }
+}
+function clearCombatState() {
+  try { localStorage.removeItem(COMBAT_STORAGE_KEY) } catch {}
+}
+
+// ── Compact Dice Roller (used inside tracker) ─────────────────────────────────
+function CombatDiceRoller() {
+  const DICE = [4, 6, 8, 10, 12, 20, 100]
+  const [modifier, setModifier] = useState(0)
+  const [rolls, setRolls]       = useState([])
+  const [diceCount, setDiceCount] = useState(1)
+
+  function roll(sides) {
+    const results = Array.from({ length: diceCount }, () => Math.floor(Math.random() * sides) + 1)
+    const total   = results.reduce((s, r) => s + r, 0) + (parseInt(modifier) || 0)
+    const label   = `${diceCount > 1 ? diceCount : ''}d${sides}${modifier !== 0 ? (modifier > 0 ? `+${modifier}` : modifier) : ''}`
+    setRolls(prev => [{ label, results, modifier: parseInt(modifier) || 0, total }, ...prev].slice(0, 6))
+  }
+
+  function rollAdvantage() {
+    const r1 = Math.floor(Math.random() * 20) + 1
+    const r2 = Math.floor(Math.random() * 20) + 1
+    const best = Math.max(r1, r2) + (parseInt(modifier) || 0)
+    setRolls(prev => [{ label: 'd20 Adv', results: [r1, r2], modifier: parseInt(modifier) || 0, total: best, adv: true }, ...prev].slice(0, 6))
+  }
+
+  function rollDisadvantage() {
+    const r1 = Math.floor(Math.random() * 20) + 1
+    const r2 = Math.floor(Math.random() * 20) + 1
+    const worst = Math.min(r1, r2) + (parseInt(modifier) || 0)
+    setRolls(prev => [{ label: 'd20 Dis', results: [r1, r2], modifier: parseInt(modifier) || 0, total: worst, dis: true }, ...prev].slice(0, 6))
+  }
+
+  const inputSm = { background:'#1a1a2e', border:'1px solid var(--border2)', borderRadius:4, color:'#f5f0e1', fontFamily:'sans-serif', fontSize:12, padding:'3px 6px', outline:'none', textAlign:'center', width:'100%' }
+
+  return (
+    <div style={{ borderTop:'1px solid var(--border)', marginTop:12, paddingTop:10 }}>
+      <div style={{ fontSize:10, color:'var(--gold)', fontFamily:'sans-serif', textTransform:'uppercase', letterSpacing:'.06em', marginBottom:8 }}>🎲 Dice Roller</div>
+
+      <div style={{ display:'flex', gap:6, alignItems:'center', flexWrap:'wrap', marginBottom:8 }}>
+        {/* Dice count + modifier */}
+        <div style={{ display:'flex', alignItems:'center', gap:4 }}>
+          <input type="number" min={1} max={20} value={diceCount} onChange={e => setDiceCount(Math.max(1, parseInt(e.target.value)||1))}
+            style={{ ...inputSm, width:36 }} title="Number of dice" />
+          <span style={{ fontSize:11, color:'var(--muted)' }}>dice</span>
+        </div>
+        <div style={{ display:'flex', alignItems:'center', gap:4 }}>
+          <span style={{ fontSize:11, color:'var(--muted)' }}>mod</span>
+          <input type="number" value={modifier} onChange={e => setModifier(e.target.value)}
+            style={{ ...inputSm, width:44 }} title="Modifier (±)" />
+        </div>
+        {/* Dice buttons */}
+        <div style={{ display:'flex', gap:4, flexWrap:'wrap' }}>
+          {DICE.map(d => (
+            <button key={d} onClick={() => roll(d)} style={{
+              background:'rgba(201,168,76,.1)', border:'1px solid rgba(201,168,76,.35)',
+              borderRadius:4, color:'var(--gold)', fontFamily:'sans-serif', fontSize:11,
+              padding:'3px 7px', cursor:'pointer', fontWeight:'bold',
+            }}>d{d}</button>
+          ))}
+        </div>
+        {/* Advantage / Disadvantage */}
+        <div style={{ display:'flex', gap:4 }}>
+          <button onClick={rollAdvantage} style={{ background:'rgba(144,200,112,.1)', border:'1px solid rgba(144,200,112,.3)', borderRadius:4, color:'#90c870', fontFamily:'sans-serif', fontSize:10, padding:'3px 8px', cursor:'pointer' }} title="Roll 2d20, take highest">Adv</button>
+          <button onClick={rollDisadvantage} style={{ background:'rgba(240,149,149,.1)', border:'1px solid rgba(240,149,149,.3)', borderRadius:4, color:'#f09595', fontFamily:'sans-serif', fontSize:10, padding:'3px 8px', cursor:'pointer' }} title="Roll 2d20, take lowest">Dis</button>
+        </div>
+      </div>
+
+      {/* Roll history */}
+      {rolls.length > 0 && (
+        <div style={{ display:'flex', gap:4, flexWrap:'wrap' }}>
+          {rolls.map((r, i) => (
+            <div key={i} style={{
+              background: i === 0 ? 'rgba(201,168,76,.12)' : 'rgba(255,255,255,.03)',
+              border: `1px solid ${i === 0 ? 'rgba(201,168,76,.4)' : 'var(--border)'}`,
+              borderRadius:5, padding:'4px 10px', textAlign:'center', minWidth:52,
+            }}>
+              <div style={{ fontSize: i === 0 ? 18 : 14, fontWeight:'bold', color: i === 0 ? 'var(--gold)' : 'var(--parch2)', fontFamily:'sans-serif', lineHeight:1 }}>{r.total}</div>
+              <div style={{ fontSize:9, color:'var(--muted)', fontFamily:'sans-serif', marginTop:1 }}>{r.label}</div>
+              {r.results.length > 1 && <div style={{ fontSize:9, color:'var(--muted)', fontFamily:'sans-serif' }}>[{r.results.join(',')}]</div>}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── Initiative Tracker ────────────────────────────────────────────────────────
 function InitiativeTracker({ encounter, onEnd, campaignCharacters }) {
-  // Build initial combatants from encounter (expand qty into individuals) + campaign party
   function buildFromEncounter() {
     const list = []
-    // Add campaign party members first (PCs)
     if (campaignCharacters?.length) {
       campaignCharacters.forEach(c => {
         list.push({
@@ -24,7 +117,6 @@ function InitiativeTracker({ encounter, onEnd, campaignCharacters }) {
         })
       })
     }
-    // Add monsters from encounter
     encounter.forEach(e => {
       const monsterData = MONSTERS.find(m => m[0] === e.name)
       const hp = monsterData?.[5] || ''
@@ -39,15 +131,24 @@ function InitiativeTracker({ encounter, onEnd, campaignCharacters }) {
     return list
   }
 
-  const [combatants, setCombatants] = useState(() => buildFromEncounter())
-  const [currentIdx, setCurrentIdx] = useState(null)
-  const [round, setRound]           = useState(1)
-  const [started, setStarted]       = useState(false)
+  // Restore from localStorage if present, otherwise build fresh
+  const [combatants, setCombatants] = useState(() => {
+    const saved = loadCombatState()
+    return saved?.combatants ?? buildFromEncounter()
+  })
+  const [currentIdx, setCurrentIdx] = useState(() => loadCombatState()?.currentIdx ?? null)
+  const [round, setRound]           = useState(() => loadCombatState()?.round ?? 1)
+  const [started, setStarted]       = useState(() => loadCombatState()?.started ?? false)
   const [newName, setNewName]       = useState('')
   const [newHp, setNewHp]           = useState('')
   const [newType, setNewType]       = useState('pc')
   const [newDex, setNewDex]         = useState(0)
   const [endingCombat, setEndingCombat] = useState(false)
+
+  // Persist combat state whenever it changes
+  useEffect(() => {
+    saveCombatState({ combatants, currentIdx, round, started })
+  }, [combatants, currentIdx, round, started])
 
   const sorted = started
     ? [...combatants].sort((a, b) => b.initiative - a.initiative || b.dexMod - a.dexMod)
@@ -103,6 +204,7 @@ function InitiativeTracker({ encounter, onEnd, campaignCharacters }) {
   }
 
   function confirmEnd(outcome) {
+    clearCombatState()
     onEnd(outcome, round)
   }
 
@@ -228,6 +330,9 @@ function InitiativeTracker({ encounter, onEnd, campaignCharacters }) {
           Click <strong style={{ color: 'var(--gold)' }}>🎲 Roll All</strong> to randomise initiatives, or type values manually — then click <strong style={{ color: 'var(--gold)' }}>▶ Start Combat</strong> to sort and begin.
         </div>
       )}
+
+      {/* Inline dice roller */}
+      <CombatDiceRoller />
 
       {/* Add combatant form */}
       <div style={{ marginTop: 10, padding: '8px 10px', background: 'rgba(255,255,255,.02)', borderRadius: 6, border: '1px solid var(--border)' }}>
@@ -487,9 +592,14 @@ export default function EncounterCalc({
                 style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 4, color: 'var(--muted)', fontSize: 12, padding: '4px 10px', cursor: 'pointer', fontFamily: 'Georgia, serif' }}
               >Clear all</button>
               <button
-                onClick={() => { setTrackerKey(k => k + 1); setShowTracker(true) }}
+                onClick={() => {
+                  const saved = loadCombatState()
+                  // Only reset if no active saved combat
+                  if (!saved?.started) setTrackerKey(k => k + 1)
+                  setShowTracker(true)
+                }}
                 style={{ background: 'rgba(201,168,76,.12)', border: '1px solid var(--gold)', borderRadius: 4, color: 'var(--gold)', fontSize: 12, padding: '4px 12px', cursor: 'pointer', fontFamily: 'Georgia, serif', fontWeight: 'bold' }}
-              >⚔ Track Combat</button>
+              >{loadCombatState()?.started ? '⚔ Resume Combat' : '⚔ Track Combat'}</button>
             </div>
           </>
         )}
