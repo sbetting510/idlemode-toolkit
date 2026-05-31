@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { MONSTERS, CR_XP, XP_THRESHOLDS } from '../../data/monsters'
+import { useCampaign } from '../../hooks/useCampaign'
 
 // ── Utility ───────────────────────────────────────────────────────────────────
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2) }
@@ -46,6 +47,7 @@ function InitiativeTracker({ encounter, onEnd, campaignCharacters }) {
   const [newHp, setNewHp]           = useState('')
   const [newType, setNewType]       = useState('pc')
   const [newDex, setNewDex]         = useState(0)
+  const [endingCombat, setEndingCombat] = useState(false)
 
   const sorted = started
     ? [...combatants].sort((a, b) => b.initiative - a.initiative || b.dexMod - a.dexMod)
@@ -96,7 +98,11 @@ function InitiativeTracker({ encounter, onEnd, campaignCharacters }) {
   }
 
   function endCombat() {
-    if (window.confirm('End combat and clear the tracker?')) onEnd()
+    setEndingCombat(true)
+  }
+
+  function confirmEnd(outcome) {
+    onEnd(outcome, round)
   }
 
   const rowStyle = (isCurrent, isDead) => ({
@@ -136,9 +142,31 @@ function InitiativeTracker({ encounter, onEnd, campaignCharacters }) {
           {!started && <button onClick={rollAll} style={{ background: 'rgba(255,255,255,.06)', border: '1px solid var(--border2)', borderRadius: 5, color: 'var(--parch2)', fontFamily: 'Georgia, serif', fontSize: 12, padding: '4px 12px', cursor: 'pointer' }}>🎲 Roll All</button>}
           {!started && combatants.length > 0 && <button onClick={startCombat} style={{ background: 'var(--crimson)', border: '1px solid rgba(201,168,76,.5)', borderRadius: 5, color: '#f5f0e1', fontFamily: 'Georgia, serif', fontSize: 12, padding: '4px 14px', cursor: 'pointer', fontWeight: 'bold' }}>▶ Start Combat</button>}
           {started && <button onClick={nextTurn} style={{ background: 'var(--crimson)', border: '1px solid rgba(201,168,76,.5)', borderRadius: 5, color: '#f5f0e1', fontFamily: 'Georgia, serif', fontSize: 13, padding: '4px 16px', cursor: 'pointer', fontWeight: 'bold' }}>Next Turn →</button>}
-          <button onClick={endCombat} style={{ background: 'none', border: '1px solid rgba(240,100,100,.3)', borderRadius: 5, color: '#f09595', fontFamily: 'Georgia, serif', fontSize: 12, padding: '4px 12px', cursor: 'pointer' }}>End Combat</button>
+          {!endingCombat && <button onClick={endCombat} style={{ background: 'none', border: '1px solid rgba(240,100,100,.3)', borderRadius: 5, color: '#f09595', fontFamily: 'Georgia, serif', fontSize: 12, padding: '4px 12px', cursor: 'pointer' }}>End Combat</button>}
         </div>
       </div>
+
+      {/* End combat outcome picker */}
+      {endingCombat && (
+        <div style={{ background: 'rgba(240,100,100,.08)', border: '1px solid rgba(240,100,100,.3)', borderRadius: 6, padding: '10px 12px', marginBottom: 10 }}>
+          <div style={{ fontSize: 12, color: '#f09595', fontWeight: 'bold', marginBottom: 8 }}>How did the encounter end?</div>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
+            {['Victory','Defeat','Fled','Avoided','Ongoing'].map(outcome => (
+              <button
+                key={outcome}
+                onClick={() => confirmEnd(outcome)}
+                style={{
+                  background: outcome === 'Victory' ? 'rgba(144,200,112,.15)' : outcome === 'Defeat' ? 'rgba(240,100,100,.15)' : 'rgba(255,255,255,.06)',
+                  border: `1px solid ${outcome === 'Victory' ? 'rgba(144,200,112,.5)' : outcome === 'Defeat' ? 'rgba(240,100,100,.4)' : 'var(--border2)'}`,
+                  borderRadius: 5, color: outcome === 'Victory' ? '#90c870' : outcome === 'Defeat' ? '#f09595' : 'var(--parch2)',
+                  fontFamily: 'Georgia, serif', fontSize: 12, padding: '5px 14px', cursor: 'pointer',
+                }}
+              >{outcome}</button>
+            ))}
+          </div>
+          <button onClick={() => setEndingCombat(false)} style={{ background: 'none', border: 'none', color: 'var(--muted)', fontSize: 11, cursor: 'pointer', fontFamily: 'sans-serif' }}>← Cancel</button>
+        </div>
+      )}
 
       {/* Column headers */}
       <div style={{ display: 'grid', gridTemplateColumns: '56px 1fr 80px 80px 28px', gap: 8, padding: '0 10px', marginBottom: 4 }}>
@@ -295,22 +323,54 @@ export default function EncounterCalc({
   onChangeQty, onRemove, onClear,
   campaignCharacters,
 }) {
+  const { campaign, encounters } = useCampaign()
   const [monSearch, setMonSearch] = useState('')
   const [dropOpen,  setDropOpen]  = useState(false)
   const [showTracker, setShowTracker] = useState(false)
-  const [trackerKey, setTrackerKey]   = useState(0) // increment to reset tracker
+  const [trackerKey, setTrackerKey]   = useState(0)
+  const searchRef = useRef(null)
+
+  // Fall back to campaign active characters when prop not provided
+  const partyForTracker = campaignCharacters
+    ?? campaign.characters.filter(c => c.str !== undefined && (c.status === 'Active' || !c.status))
 
   const result = calcDifficulty(encounter, partySize, partyLevel)
 
-  const dropResults = monSearch.trim()
-    ? MONSTERS.filter(m => m[0].toLowerCase().includes(monSearch.toLowerCase())).slice(0, 8)
+  // Show all monsters on focus; filter when typing; show up to 20
+  const dropResults = dropOpen
+    ? MONSTERS.filter(m =>
+        !monSearch.trim() || m[0].toLowerCase().includes(monSearch.toLowerCase())
+      ).slice(0, 20)
     : []
 
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handleClick(e) {
+      if (searchRef.current && !searchRef.current.contains(e.target)) setDropOpen(false)
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
+
   function handleAdd(name, cr) {
-    const fakeEvent = { name, cr }
     onChangeQty(name, cr, 1, true)
     setMonSearch('')
     setDropOpen(false)
+  }
+
+  function handleEncounterEnd(outcome, rounds) {
+    // Build a name from monster list
+    const monsterDesc = encounter.map(e => e.qty > 1 ? `${e.qty}× ${e.name}` : e.name).join(', ')
+    const name = monsterDesc ? `Combat: ${monsterDesc}` : 'Combat Encounter'
+    const difficulty = result?.diff || 'Unknown'
+    const xpAwarded  = result?.rawXP ? String(result.rawXP) : ''
+    const notes      = [
+      monsterDesc && `Monsters: ${monsterDesc}`,
+      rounds > 1 && `Lasted ${rounds} round${rounds > 1 ? 's' : ''}.`,
+    ].filter(Boolean).join(' ')
+
+    encounters.add({ name, difficulty, outcome, xpAwarded, notes })
+    setShowTracker(false)
   }
 
   return (
@@ -339,32 +399,36 @@ export default function EncounterCalc({
         </div>
 
         <div style={panelTitle}>Add monsters</div>
-        <div style={{ position: 'relative', marginBottom: '0.5rem' }}>
+        <div ref={searchRef} style={{ position: 'relative', marginBottom: '0.5rem' }}>
           <input
             type="text"
             value={monSearch}
-            placeholder="Search by name..."
+            placeholder="Search or browse all monsters..."
             onChange={e => { setMonSearch(e.target.value); setDropOpen(true) }}
             onFocus={() => setDropOpen(true)}
             style={{
               width: '100%',
               background: 'rgba(255,255,255,0.06)',
-              border: '1px solid var(--border2)',
-              borderRadius: 5, color: 'var(--parch)',
+              border: `1px solid ${dropOpen ? 'var(--gold)' : 'var(--border2)'}`,
+              borderRadius: dropOpen ? '5px 5px 0 0' : 5,
+              color: 'var(--parch)',
               fontFamily: 'Georgia, serif', fontSize: 13,
               padding: '6px 10px', outline: 'none',
-              marginBottom: 6,
             }}
           />
-          {dropOpen && dropResults.length > 0 && (
+          {dropOpen && (
             <div style={{
               position: 'absolute', top: '100%', left: 0, right: 0,
               background: 'var(--stone2)',
-              border: '1px solid var(--border2)',
-              borderRadius: 5, maxHeight: 200,
+              border: '1px solid var(--gold)',
+              borderTop: 'none',
+              borderRadius: '0 0 5px 5px',
+              maxHeight: 240,
               overflowY: 'auto', zIndex: 100,
-              marginTop: 2,
             }}>
+              {dropResults.length === 0 && (
+                <div style={{ padding: '10px', fontSize: 12, color: 'var(--muted)', fontStyle: 'italic', textAlign: 'center' }}>No monsters match "{monSearch}"</div>
+              )}
               {dropResults.map(m => (
                 <div
                   key={m[0]}
@@ -501,8 +565,8 @@ export default function EncounterCalc({
         <InitiativeTracker
           key={trackerKey}
           encounter={encounter}
-          onEnd={() => setShowTracker(false)}
-          campaignCharacters={campaignCharacters}
+          onEnd={handleEncounterEnd}
+          campaignCharacters={partyForTracker}
         />
       )}
     </div>
