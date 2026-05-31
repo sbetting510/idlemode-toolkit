@@ -359,17 +359,18 @@ export default function EncounterCalc({
   }
 
   function handleEncounterEnd(outcome, rounds) {
-    // Build a name from monster list
     const monsterDesc = encounter.map(e => e.qty > 1 ? `${e.qty}× ${e.name}` : e.name).join(', ')
-    const name = monsterDesc ? `Combat: ${monsterDesc}` : 'Combat Encounter'
-    const difficulty = result?.diff || 'Unknown'
-    const xpAwarded  = result?.rawXP ? String(result.rawXP) : ''
-    const notes      = [
+    const name        = monsterDesc ? `Combat: ${monsterDesc}` : 'Combat Encounter'
+    const difficulty  = result?.diff || 'Unknown'
+    const possibleXp  = result?.rawXP ? String(result.rawXP) : ''
+    // Only award XP on a clear victory; anything else defaults to 0
+    const xpAwarded   = outcome === 'Victory' && result?.rawXP ? String(result.rawXP) : '0'
+    const notes       = [
       monsterDesc && `Monsters: ${monsterDesc}`,
-      rounds > 1 && `Lasted ${rounds} round${rounds > 1 ? 's' : ''}.`,
+      `Lasted ${rounds} round${rounds !== 1 ? 's' : ''}.`,
     ].filter(Boolean).join(' ')
 
-    encounters.add({ name, difficulty, outcome, xpAwarded, notes })
+    encounters.add({ name, difficulty, outcome, xpAwarded, possibleXp, notes })
     setShowTracker(false)
   }
 

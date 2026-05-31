@@ -1139,7 +1139,7 @@ function Sessions({ campaign, module }) {
 function Encounters({ campaign, module }) {
   const [adding, setAdding]   = useState(false)
   const [editing, setEditing] = useState(null)
-  const blank = { name:'', difficulty:'Medium', outcome:'Victory', xpAwarded:'', notes:'' }
+  const blank = { name:'', difficulty:'Medium', outcome:'Victory', xpAwarded:'', possibleXp:'', notes:'' }
   const [form, setForm]       = useState(blank)
 
   function submit() {
@@ -1150,7 +1150,7 @@ function Encounters({ campaign, module }) {
   }
 
   function startEdit(e) {
-    setForm({ name:e.name, difficulty:e.difficulty||'Medium', outcome:e.outcome||'Victory', xpAwarded:e.xpAwarded||'', notes:e.notes||'' })
+    setForm({ name:e.name, difficulty:e.difficulty||'Medium', outcome:e.outcome||'Victory', xpAwarded:e.xpAwarded||'', possibleXp:e.possibleXp||'', notes:e.notes||'' })
     setEditing(e.id); setAdding(false)
   }
 
@@ -1164,7 +1164,8 @@ function Encounters({ campaign, module }) {
     <div style={{ ...cardStyle, borderLeft:'3px solid var(--gold)', marginBottom:'1rem' }}>
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:8 }}>
         <Field label="Encounter name *"><input style={inputStyle} value={form.name} onChange={e => setForm(f => ({...f, name: e.target.value}))} placeholder="e.g. Goblin ambush..." /></Field>
-        <Field label="XP awarded"><input style={inputStyle} type="number" value={form.xpAwarded} onChange={e => setForm(f => ({...f, xpAwarded: e.target.value}))} /></Field>
+        <Field label="XP Awarded"><input style={inputStyle} type="number" placeholder="0" value={form.xpAwarded} onChange={e => setForm(f => ({...f, xpAwarded: e.target.value}))} /></Field>
+        <Field label="Possible XP"><input style={inputStyle} type="number" placeholder="Total monster XP value" value={form.possibleXp} onChange={e => setForm(f => ({...f, possibleXp: e.target.value}))} /></Field>
         <Field label="Difficulty">
           <select style={selectStyle} value={form.difficulty} onChange={e => setForm(f => ({...f, difficulty: e.target.value}))}>
             {ENCOUNTER_DIFFICULTIES.map(d => <option key={d} value={d} style={{background:'#16213e',color:'#f5f0e1'}}>{d}</option>)}
@@ -1194,7 +1195,16 @@ function Encounters({ campaign, module }) {
                   <span style={{ fontSize:14, fontWeight:'bold', color:'var(--gold2)' }}>{e.name}</span>
                   <StatusBadge status={e.difficulty} colorMap={encDiffColors} />
                   <StatusBadge status={e.outcome}    colorMap={encOutcomeColors} />
-                  {e.xpAwarded && <span style={{ fontSize:12, color:'var(--muted)' }}>XP: <strong style={{color:'var(--gold)'}}>{parseInt(e.xpAwarded).toLocaleString()}</strong></span>}
+                  {(e.xpAwarded !== undefined && e.xpAwarded !== '') && (
+                    <span style={{ fontSize:12, color:'var(--muted)' }}>
+                      XP Awarded: <strong style={{color: parseInt(e.xpAwarded) > 0 ? 'var(--gold)' : '#f09595'}}>{parseInt(e.xpAwarded)||0}</strong>
+                    </span>
+                  )}
+                  {e.possibleXp && parseInt(e.possibleXp) > 0 && (
+                    <span style={{ fontSize:12, color:'var(--muted)' }}>
+                      Possible: <strong style={{color:'var(--muted)'}}>{parseInt(e.possibleXp).toLocaleString()}</strong>
+                    </span>
+                  )}
                 </div>
                 {e.notes && <div style={{ fontSize:12, color:'var(--parch2)', lineHeight:1.5 }}>{e.notes}</div>}
               </div>
