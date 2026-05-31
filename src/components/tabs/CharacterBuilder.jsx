@@ -1052,104 +1052,163 @@ export function printCharacter(char) {
 <title>${char.name || 'Character'} — D&D Character Sheet</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: Georgia, serif; color: #1a1a1a; background: white; padding: 20px; font-size: 13px; }
-  h1 { font-size: 26px; border-bottom: 3px double #8b0000; padding-bottom: 6px; margin-bottom: 4px; }
-  .subtitle { color: #555; font-size: 13px; margin-bottom: 16px; }
-  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
-  .grid6 { display: grid; grid-template-columns: repeat(6,1fr); gap: 6px; }
-  .section { margin-bottom: 16px; }
-  .section-title { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: #8b0000; border-bottom: 1px solid #ccc; padding-bottom: 3px; margin-bottom: 8px; }
-  .box { border: 1px solid #ccc; border-radius: 5px; padding: 8px; }
-  .ability-box { border: 2px solid #8b0000; border-radius: 6px; padding: 8px 4px; text-align: center; }
-  .ability-name { font-size: 9px; text-transform: uppercase; letter-spacing: .06em; color: #8b0000; }
-  .ability-score { font-size: 22px; font-weight: bold; }
-  .ability-mod { font-size: 14px; font-weight: bold; color: #333; }
-  .stat-row { display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding: 3px 0; font-size: 12px; }
-  .prof-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid #333; background: transparent; margin-right: 4px; vertical-align: middle; }
-  .prof-dot.filled { background: #333; }
-  .combat-box { border: 1.5px solid #8b0000; border-radius: 6px; text-align: center; padding: 6px 4px; }
-  .combat-val { font-size: 20px; font-weight: bold; }
-  .combat-label { font-size: 9px; text-transform: uppercase; letter-spacing: .04em; color: #8b0000; }
-  .spell-slot { display: inline-block; border: 1px solid #8b0000; border-radius: 3px; padding: 1px 6px; margin: 2px; font-size: 11px; }
-  @media print { body { padding: 10px; } }
+  body { font-family: Georgia, serif; color: #1a1a1a; background: white; padding: 18px 22px; font-size: 12px; }
+
+  /* ── Header ── */
+  .sheet-header { border-bottom: 3px double #8b0000; padding-bottom: 10px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: flex-end; }
+  .char-name { font-size: 28px; font-weight: bold; letter-spacing: .02em; line-height: 1; }
+  .char-sub { font-size: 12px; color: #555; margin-top: 3px; }
+  .char-meta { font-size: 11px; color: #777; text-align: right; line-height: 1.6; }
+
+  /* ── Layout ── */
+  .two-col { display: grid; grid-template-columns: 200px 1fr; gap: 16px; }
+  .section { margin-bottom: 14px; }
+  .section-title { font-size: 9px; text-transform: uppercase; letter-spacing: .1em; color: #8b0000; border-bottom: 1.5px solid #8b0000; padding-bottom: 2px; margin-bottom: 7px; font-weight: bold; }
+
+  /* ── Ability scores ── */
+  .abilities { display: grid; grid-template-columns: repeat(6,1fr); gap: 5px; margin-bottom: 14px; }
+  .ability-box { border: 1.5px solid #8b0000; border-radius: 5px; text-align: center; padding: 5px 2px; }
+  .ab-name { font-size: 8px; text-transform: uppercase; letter-spacing: .06em; color: #8b0000; }
+  .ab-score { font-size: 20px; font-weight: bold; line-height: 1.1; }
+  .ab-mod { font-size: 13px; font-weight: bold; border-top: 1px solid #ddd; margin-top: 2px; padding-top: 1px; }
+
+  /* ── Combat stats ── */
+  .combat-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 6px; margin-bottom: 14px; }
+  .combat-box { border: 1px solid #ccc; border-radius: 5px; text-align: center; padding: 5px 3px; }
+  .combat-val { font-size: 18px; font-weight: bold; color: #1a1a1a; }
+  .combat-label { font-size: 8px; text-transform: uppercase; letter-spacing: .05em; color: #8b0000; margin-top: 1px; }
+
+  /* ── Stat rows ── */
+  .stat-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f0f0f0; padding: 2.5px 0; font-size: 11px; }
+  .prof-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid #555; background: transparent; margin-right: 5px; vertical-align: middle; flex-shrink: 0; }
+  .prof-dot.filled { background: #555; border-color: #555; }
+
+  /* ── Right column ── */
+  .box { border: 1px solid #ddd; border-radius: 4px; padding: 7px; font-size: 11px; line-height: 1.6; }
+  .spell-header { font-size: 10px; color: #555; margin-bottom: 4px; }
+
+  /* ── Personality ── */
+  .trait-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .trait-box { border: 1px solid #ddd; border-radius: 4px; padding: 6px; }
+  .trait-label { font-size: 8px; text-transform: uppercase; letter-spacing: .06em; color: #8b0000; margin-bottom: 3px; }
+  .trait-val { font-size: 11px; line-height: 1.5; }
+
+  /* ── Footer ── */
+  .sheet-footer { font-size: 9px; color: #bbb; border-top: 1px solid #eee; margin-top: 16px; padding-top: 6px; }
+
+  @media print { body { padding: 10px 14px; } }
 </style>
 </head>
 <body>
-<h1>${char.name || 'Unnamed Hero'}</h1>
-<div class="subtitle">
-  ${[char.alignment, (char.subrace||char.race), (char.subclass||char.class), 'Level ' + char.level, char.background].filter(Boolean).join(' · ')}
-  ${char.playerName ? ' &nbsp;|&nbsp; Player: ' + char.playerName : ''}
+
+<div class="sheet-header">
+  <div>
+    <div class="char-name">${char.name || 'Unnamed Hero'}</div>
+    <div class="char-sub">${[char.subrace||char.race, char.subclass||char.class, char.background].filter(Boolean).join(' · ')}</div>
+  </div>
+  <div class="char-meta">
+    ${char.playerName ? `Player: <strong>${char.playerName}</strong><br>` : ''}
+    Level <strong>${char.level}</strong> &nbsp;|&nbsp; ${char.alignment}<br>
+    Prof. Bonus: <strong>+${prof}</strong> &nbsp;|&nbsp; XP: ${(char.xp||0).toLocaleString()}
+  </div>
 </div>
 
-<div class="section grid6">
+<!-- Ability scores -->
+<div class="abilities">
   ${ABILITIES.map(ab=>`
   <div class="ability-box">
-    <div class="ability-name">${ABILITY_SHORT[ab]}</div>
-    <div class="ability-score">${char[ab]||10}</div>
-    <div class="ability-mod">${modStr(char[ab]||10)}</div>
+    <div class="ab-name">${ABILITY_SHORT[ab]}</div>
+    <div class="ab-score">${char[ab]||10}</div>
+    <div class="ab-mod">${modStr(char[ab]||10)}</div>
   </div>`).join('')}
 </div>
 
-<div class="section grid3" style="margin-top:12px">
-  <div class="combat-box"><div class="combat-val">${char.maxHp||'—'}</div><div class="combat-label">Max HP</div></div>
+<!-- Combat stats -->
+<div class="combat-grid">
+  <div class="combat-box"><div class="combat-val">${char.hp||'—'} / ${char.maxHp||'—'}</div><div class="combat-label">HP (current / max)</div></div>
   <div class="combat-box"><div class="combat-val">${char.ac||10}</div><div class="combat-label">Armor Class</div></div>
   <div class="combat-box"><div class="combat-val">${modStr(char.initiative||0)}</div><div class="combat-label">Initiative</div></div>
-  <div class="combat-box"><div class="combat-val">${char.speed||30}ft</div><div class="combat-label">Speed</div></div>
-  <div class="combat-box"><div class="combat-val">+${char.profBonus||2}</div><div class="combat-label">Prof. Bonus</div></div>
-  <div class="combat-box"><div class="combat-val">${char.passivePerception||10}</div><div class="combat-label">Pass. Perception</div></div>
+  <div class="combat-box"><div class="combat-val">${char.speed||30} ft</div><div class="combat-label">Speed</div></div>
+  <div class="combat-box"><div class="combat-val">+${prof}</div><div class="combat-label">Prof. Bonus</div></div>
+  <div class="combat-box"><div class="combat-val">${char.passivePerception||10}</div><div class="combat-label">Passive Perception</div></div>
 </div>
 
-<div class="section grid2" style="margin-top:12px">
+<div class="two-col">
+  <!-- Left column: saves + skills -->
   <div>
-    <div class="section-title">Saving Throws</div>
-    ${ABILITIES.map(ab=>{
-      const profed = char.savingThrows.includes(ab)||(classObj?.savingThrows.includes(ab))
-      const bonus  = abilityMod(char[ab]||10)+(profed?prof:0)
-      return `<div class="stat-row"><span><span class="prof-dot${profed?' filled':''}"></span>${ABILITY_LABELS[ab]}</span><strong>${bonus>=0?'+':''}${bonus}</strong></div>`
-    }).join('')}
-  </div>
-  <div>
-    <div class="section-title">Skills</div>
-    ${SKILLS.map(skill=>{
-      const profed = char.skillProfs.includes(skill.name)
-      const bonus  = abilityMod(char[skill.ability]||10)+(profed?prof:0)
-      return `<div class="stat-row"><span><span class="prof-dot${profed?' filled':''}"></span>${skill.name} <small style="color:#888">(${ABILITY_SHORT[skill.ability]})</small></span><strong>${bonus>=0?'+':''}${bonus}</strong></div>`
-    }).join('')}
-  </div>
-</div>
-
-${char.equipment.length > 0 ? `
-<div class="section">
-  <div class="section-title">Equipment</div>
-  <div class="box" style="font-size:12px">${char.equipment.join(' · ')}</div>
-  <div style="font-size:12px;margin-top:4px">Currency: ${char.cp||0}cp · ${char.sp||0}sp · ${char.ep||0}ep · ${char.gp||0}gp · ${char.pp||0}pp</div>
-</div>` : ''}
-
-${(char.cantrips.length > 0 || char.spells.length > 0) ? `
-<div class="section">
-  <div class="section-title">Spells — ${char.class} (${ABILITY_LABELS[char.spellcastingAbility]}) · Save DC ${spellDC} · Attack +${prof + abilityMod(char[char.spellcastingAbility]||10)}</div>
-  ${char.cantrips.length > 0 ? `<div style="margin-bottom:4px"><strong>Cantrips:</strong> ${char.cantrips.join(', ')}</div>` : ''}
-  ${char.spells.length > 0 ? `<div><strong>Spells Known/Prepared:</strong> ${char.spells.join(', ')}</div>` : ''}
-</div>` : ''}
-
-${(char.personalityTrait||char.ideal||char.bond||char.flaw||char.backstory) ? `
-<div class="section">
-  <div class="section-title">Personality & Backstory</div>
-  <div class="grid2">
-    <div>
-      ${char.personalityTrait?`<div class="stat-row"><strong>Trait:</strong>&nbsp;${char.personalityTrait}</div>`:''}
-      ${char.ideal?`<div class="stat-row"><strong>Ideal:</strong>&nbsp;${char.ideal}</div>`:''}
-      ${char.bond?`<div class="stat-row"><strong>Bond:</strong>&nbsp;${char.bond}</div>`:''}
-      ${char.flaw?`<div class="stat-row"><strong>Flaw:</strong>&nbsp;${char.flaw}</div>`:''}
-      ${[char.age&&('Age: '+char.age), char.height&&('Height: '+char.height), char.weight&&('Weight: '+char.weight)].filter(Boolean).map(x=>`<div class="stat-row">${x}</div>`).join('')}
-      ${[char.eyes&&('Eyes: '+char.eyes), char.hair&&('Hair: '+char.hair), char.skin&&('Skin: '+char.skin)].filter(Boolean).map(x=>`<div class="stat-row">${x}</div>`).join('')}
+    <div class="section">
+      <div class="section-title">Saving Throws</div>
+      ${ABILITIES.map(ab=>{
+        const profed = char.savingThrows.includes(ab)||(classObj?.savingThrows.includes(ab))
+        const bonus  = abilityMod(char[ab]||10)+(profed?prof:0)
+        return `<div class="stat-row"><span><span class="prof-dot${profed?' filled':''}"></span>${ABILITY_LABELS[ab]}</span><strong>${bonus>=0?'+':''}${bonus}</strong></div>`
+      }).join('')}
     </div>
-    ${char.backstory?`<div><strong>Backstory:</strong> ${char.backstory}</div>`:''}
-  </div>
-</div>` : ''}
 
-<div style="font-size:10px;color:#aaa;margin-top:20px;border-top:1px solid #eee;padding-top:8px">
+    <div class="section">
+      <div class="section-title">Skills</div>
+      ${SKILLS.map(skill=>{
+        const profed = char.skillProfs.includes(skill.name)
+        const bonus  = abilityMod(char[skill.ability]||10)+(profed?prof:0)
+        return `<div class="stat-row"><span><span class="prof-dot${profed?' filled':''}"></span>${skill.name} <span style="color:#aaa;font-size:10px">(${ABILITY_SHORT[skill.ability]})</span></span><strong>${bonus>=0?'+':''}${bonus}</strong></div>`
+      }).join('')}
+    </div>
+  </div>
+
+  <!-- Right column: equipment, spells, personality, backstory -->
+  <div>
+    ${char.equipment.length > 0 ? `
+    <div class="section">
+      <div class="section-title">Equipment</div>
+      <div class="box">${char.equipment.join(', ')}</div>
+      <div style="font-size:11px;margin-top:4px;color:#555">
+        Currency: ${char.cp||0} cp &nbsp;·&nbsp; ${char.sp||0} sp &nbsp;·&nbsp; ${char.ep||0} ep &nbsp;·&nbsp; ${char.gp||0} gp &nbsp;·&nbsp; ${char.pp||0} pp
+      </div>
+    </div>` : ''}
+
+    ${(char.languages?.length > 0) ? `
+    <div class="section">
+      <div class="section-title">Languages</div>
+      <div style="font-size:11px;line-height:1.7">${char.languages.join(', ')}</div>
+    </div>` : ''}
+
+    ${(char.cantrips.length > 0 || char.spells.length > 0) ? `
+    <div class="section">
+      <div class="section-title">Spells</div>
+      <div class="spell-header">${char.class} · ${ABILITY_LABELS[char.spellcastingAbility]} · Save DC ${spellDC} · Attack +${prof + abilityMod(char[char.spellcastingAbility]||10)}</div>
+      ${char.cantrips.length > 0 ? `<div class="box" style="margin-bottom:5px"><strong style="font-size:10px;color:#8b0000">CANTRIPS</strong><br>${char.cantrips.join(', ')}</div>` : ''}
+      ${char.spells.length > 0 ? `<div class="box"><strong style="font-size:10px;color:#8b0000">SPELLS KNOWN/PREPARED</strong><br>${char.spells.join(', ')}</div>` : ''}
+    </div>` : ''}
+
+    ${(char.personalityTrait||char.ideal||char.bond||char.flaw) ? `
+    <div class="section">
+      <div class="section-title">Personality</div>
+      <div class="trait-grid">
+        ${char.personalityTrait ? `<div class="trait-box"><div class="trait-label">Personality Trait</div><div class="trait-val">${char.personalityTrait}</div></div>` : ''}
+        ${char.ideal  ? `<div class="trait-box"><div class="trait-label">Ideal</div><div class="trait-val">${char.ideal}</div></div>` : ''}
+        ${char.bond   ? `<div class="trait-box"><div class="trait-label">Bond</div><div class="trait-val">${char.bond}</div></div>` : ''}
+        ${char.flaw   ? `<div class="trait-box"><div class="trait-label">Flaw</div><div class="trait-val">${char.flaw}</div></div>` : ''}
+      </div>
+    </div>` : ''}
+
+    ${(char.age||char.height||char.weight||char.eyes||char.hair||char.skin) ? `
+    <div class="section">
+      <div class="section-title">Appearance</div>
+      <div style="font-size:11px;line-height:1.8;color:#333">
+        ${[char.age&&('Age: '+char.age), char.height&&('Height: '+char.height), char.weight&&('Weight: '+char.weight), char.eyes&&('Eyes: '+char.eyes), char.hair&&('Hair: '+char.hair), char.skin&&('Skin: '+char.skin)].filter(Boolean).join(' &nbsp;·&nbsp; ')}
+      </div>
+      ${char.appearance ? `<div style="font-size:11px;margin-top:5px;line-height:1.6;font-style:italic;color:#444">${char.appearance}</div>` : ''}
+    </div>` : ''}
+
+    ${char.backstory ? `
+    <div class="section">
+      <div class="section-title">Backstory</div>
+      <div class="box" style="line-height:1.7;color:#333">${char.backstory}</div>
+    </div>` : ''}
+  </div>
+</div>
+
+<div class="sheet-footer">
   Generated by IdleMode D&D Toolkit · idlemode-toolkit.vercel.app · SRD 5.1/5.2 CC BY 4.0
 </div>
 </body>

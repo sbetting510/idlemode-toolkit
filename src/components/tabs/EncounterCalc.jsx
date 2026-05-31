@@ -1,6 +1,197 @@
 import { useState } from 'react'
 import { MONSTERS, CR_XP, XP_THRESHOLDS } from '../../data/monsters'
 
+// ── Utility ───────────────────────────────────────────────────────────────────
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2) }
+function d20() { return Math.floor(Math.random() * 20) + 1 }
+
+// ── Initiative Tracker ────────────────────────────────────────────────────────
+function InitiativeTracker({ encounter, onEnd }) {
+  // Build initial combatants from encounter (expand qty into individuals)
+  function buildFromEncounter() {
+    const list = []
+    encounter.forEach(e => {
+      const monsterData = MONSTERS.find(m => m[0] === e.name)
+      const hp = monsterData?.[5] || ''  // index 5 is avg HP in monster data
+      for (let i = 0; i < e.qty; i++) {
+        list.push({
+          id: uid(), name: e.qty > 1 ? `${e.name} ${i + 1}` : e.name,
+          initiative: 0, hp: hp ? String(hp) : '', maxHp: hp ? String(hp) : '',
+          type: 'monster', dexMod: 0,
+        })
+      }
+    })
+    return list
+  }
+
+  const [combatants, setCombatants] = useState(() => buildFromEncounter())
+  const [currentIdx, setCurrentIdx] = useState(null)
+  const [round, setRound]           = useState(1)
+  const [started, setStarted]       = useState(false)
+  const [newName, setNewName]       = useState('')
+  const [newHp, setNewHp]           = useState('')
+  const [newType, setNewType]       = useState('pc')
+  const [newDex, setNewDex]         = useState(0)
+
+  const sorted = started
+    ? [...combatants].sort((a, b) => b.initiative - a.initiative || b.dexMod - a.dexMod)
+    : combatants
+
+  // keep an id→idx map so we can highlight current combatant regardless of re-sort
+  const currentId = started && currentIdx !== null ? sorted[currentIdx]?.id : null
+
+  function rollAll() {
+    setCombatants(prev => prev.map(c => ({ ...c, initiative: d20() + c.dexMod })))
+  }
+
+  function setInit(id, val) {
+    setCombatants(prev => prev.map(c => c.id === id ? { ...c, initiative: parseInt(val) || 0 } : c))
+  }
+
+  function setHp(id, val) {
+    setCombatants(prev => prev.map(c => c.id === id ? { ...c, hp: val } : c))
+  }
+
+  function removeCombatant(id) {
+    setCombatants(prev => {
+      const next = prev.filter(c => c.id !== id)
+      return next
+    })
+    if (started) setCurrentIdx(0)
+  }
+
+  function addCombatant() {
+    if (!newName.trim()) return
+    setCombatants(prev => [...prev, {
+      id: uid(), name: newName.trim(),
+      initiative: 0, hp: newHp, maxHp: newHp,
+      type: newType, dexMod: parseInt(newDex) || 0,
+    }])
+    setNewName(''); setNewHp(''); setNewDex(0)
+  }
+
+  function startCombat() {
+    setCurrentIdx(0)
+    setStarted(true)
+  }
+
+  function nextTurn() {
+    const next = (currentIdx + 1) % sorted.length
+    if (next === 0) setRound(r => r + 1)
+    setCurrentIdx(next)
+  }
+
+  function endCombat() {
+    if (window.confirm('End combat and clear the tracker?')) onEnd()
+  }
+
+  const rowStyle = (isCurrent, isDead) => ({
+    display: 'grid',
+    gridTemplateColumns: '28px 1fr 70px 80px 28px',
+    alignItems: 'center', gap: 6,
+    padding: '6px 10px', borderRadius: 6, marginBottom: 4,
+    background: isCurrent ? 'rgba(201,168,76,0.12)' : 'rgba(255,255,255,0.03)',
+    border: `1px solid ${isCurrent ? 'var(--gold)' : 'var(--border)'}`,
+    opacity: isDead ? 0.4 : 1,
+    transition: 'background 0.2s, border-color 0.2s',
+  })
+
+  const inputSm = {
+    background: '#1a1a2e', border: '1px solid var(--border2)', borderRadius: 4,
+    color: '#f5f0e1', fontFamily: 'Georgia, serif', fontSize: 12,
+    padding: '3px 6px', outline: 'none', width: '100%', textAlign: 'center',
+  }
+
+  return (
+    <div style={{ marginTop: '1.25rem', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)', borderRadius: 8, padding: '1rem' }}>
+
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem', paddingBottom: 8, borderBottom: '1px solid var(--border)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <span style={{ fontSize: 14, fontWeight: 'bold', color: 'var(--gold)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>⚔ Initiative Tracker</span>
+          {started && (
+            <span style={{ fontSize: 12, color: 'var(--muted)', fontFamily: 'sans-serif' }}>
+              Round <strong style={{ color: 'var(--gold)' }}>{round}</strong>
+              {currentIdx !== null && sorted[currentIdx] && (
+                <> · <strong style={{ color: '#f5c842' }}>{sorted[currentIdx].name}'s turn</strong></>
+              )}
+            </span>
+          )}
+        </div>
+        <div style={{ display: 'flex', gap: 6 }}>
+          {!started && <button onClick={rollAll} style={{ background: 'rgba(255,255,255,.06)', border: '1px solid var(--border2)', borderRadius: 5, color: 'var(--parch2)', fontFamily: 'Georgia, serif', fontSize: 12, padding: '4px 12px', cursor: 'pointer' }}>🎲 Roll All</button>}
+          {!started && combatants.length > 0 && <button onClick={startCombat} style={{ background: 'var(--crimson)', border: '1px solid rgba(201,168,76,.5)', borderRadius: 5, color: '#f5f0e1', fontFamily: 'Georgia, serif', fontSize: 12, padding: '4px 14px', cursor: 'pointer', fontWeight: 'bold' }}>▶ Start Combat</button>}
+          {started && <button onClick={nextTurn} style={{ background: 'var(--crimson)', border: '1px solid rgba(201,168,76,.5)', borderRadius: 5, color: '#f5f0e1', fontFamily: 'Georgia, serif', fontSize: 13, padding: '4px 16px', cursor: 'pointer', fontWeight: 'bold' }}>Next Turn →</button>}
+          <button onClick={endCombat} style={{ background: 'none', border: '1px solid rgba(240,100,100,.3)', borderRadius: 5, color: '#f09595', fontFamily: 'Georgia, serif', fontSize: 12, padding: '4px 12px', cursor: 'pointer' }}>End Combat</button>
+        </div>
+      </div>
+
+      {/* Column headers */}
+      <div style={{ display: 'grid', gridTemplateColumns: '28px 1fr 70px 80px 28px', gap: 6, padding: '0 10px', marginBottom: 4 }}>
+        {['Init', 'Name', 'HP', 'Max HP', ''].map((h, i) => (
+          <div key={i} style={{ fontSize: 9, color: 'var(--muted)', fontFamily: 'sans-serif', textTransform: 'uppercase', letterSpacing: '.05em', textAlign: i === 0 || i >= 2 ? 'center' : 'left' }}>{h}</div>
+        ))}
+      </div>
+
+      {/* Combatant rows */}
+      {(started ? sorted : combatants).map((c) => {
+        const isCurrent = c.id === currentId
+        const hpNum = parseInt(c.hp)
+        const isDead = c.maxHp && !isNaN(hpNum) && hpNum <= 0
+        return (
+          <div key={c.id} style={rowStyle(isCurrent, isDead)}>
+            {/* Initiative */}
+            <input
+              type="number"
+              value={c.initiative}
+              onChange={e => setInit(c.id, e.target.value)}
+              disabled={started}
+              style={{ ...inputSm, color: started ? 'var(--gold)' : '#f5f0e1', fontWeight: 'bold', background: started ? 'transparent' : '#1a1a2e', border: started ? 'none' : '1px solid var(--border2)' }}
+            />
+            {/* Name + type badge */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, overflow: 'hidden' }}>
+              {isCurrent && <span style={{ fontSize: 10, color: 'var(--gold)', flexShrink: 0 }}>▶</span>}
+              <span style={{ fontSize: 13, color: isCurrent ? 'var(--gold)' : isDead ? 'var(--muted)' : 'var(--parch2)', fontWeight: isCurrent ? 'bold' : 'normal', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textDecoration: isDead ? 'line-through' : 'none' }}>{c.name}</span>
+              <span style={{ fontSize: 9, fontFamily: 'sans-serif', padding: '1px 5px', borderRadius: 2, background: c.type === 'pc' ? 'rgba(144,184,248,.15)' : 'rgba(240,149,149,.12)', color: c.type === 'pc' ? '#90b8f8' : '#f09595', border: `1px solid ${c.type === 'pc' ? 'rgba(144,184,248,.3)' : 'rgba(240,149,149,.3)'}`, flexShrink: 0 }}>{c.type === 'pc' ? 'PC' : 'MON'}</span>
+            </div>
+            {/* Current HP */}
+            <input
+              type="number"
+              value={c.hp}
+              onChange={e => setHp(c.id, e.target.value)}
+              placeholder="—"
+              style={{ ...inputSm, color: isDead ? '#f09595' : parseInt(c.hp) <= (parseInt(c.maxHp) * 0.5) && c.maxHp ? '#f5c842' : '#90c870' }}
+            />
+            {/* Max HP (read-only) */}
+            <div style={{ textAlign: 'center', fontSize: 12, color: 'var(--muted)', fontFamily: 'sans-serif' }}>{c.maxHp || '—'}</div>
+            {/* Remove */}
+            <button onClick={() => removeCombatant(c.id)} style={{ background: 'none', border: 'none', color: 'rgba(240,100,100,.5)', cursor: 'pointer', fontSize: 14, padding: 0, lineHeight: 1 }}>×</button>
+          </div>
+        )
+      })}
+
+      {combatants.length === 0 && (
+        <div style={{ textAlign: 'center', padding: '1rem', color: 'var(--muted)', fontSize: 12, fontStyle: 'italic' }}>No combatants. Add monsters to the encounter above, or add party members below.</div>
+      )}
+
+      {/* Add combatant form */}
+      <div style={{ marginTop: 10, padding: '8px 10px', background: 'rgba(255,255,255,.02)', borderRadius: 6, border: '1px solid var(--border)' }}>
+        <div style={{ fontSize: 10, color: 'var(--muted)', fontFamily: 'sans-serif', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 6 }}>Add combatant</div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 80px 60px 70px auto', gap: 6, alignItems: 'flex-end' }}>
+          <input value={newName} onChange={e => setNewName(e.target.value)} placeholder="Name..." onKeyDown={e => e.key === 'Enter' && addCombatant()} style={{ background: '#1a1a2e', border: '1px solid var(--border2)', borderRadius: 4, color: '#f5f0e1', fontFamily: 'Georgia, serif', fontSize: 12, padding: '5px 8px', outline: 'none' }} />
+          <input type="number" value={newHp} onChange={e => setNewHp(e.target.value)} placeholder="HP" style={{ ...inputSm, padding: '5px 8px' }} />
+          <input type="number" value={newDex} onChange={e => setNewDex(e.target.value)} placeholder="DEX mod" title="Dex modifier for initiative tiebreaks" style={{ ...inputSm, padding: '5px 8px' }} />
+          <select value={newType} onChange={e => setNewType(e.target.value)} style={{ background: '#16213e', border: '1px solid var(--border2)', borderRadius: 4, color: '#f5f0e1', fontFamily: 'Georgia, serif', fontSize: 12, padding: '5px 6px', outline: 'none', cursor: 'pointer' }}>
+            <option value="pc" style={{ background: '#16213e' }}>PC</option>
+            <option value="monster" style={{ background: '#16213e' }}>Monster</option>
+          </select>
+          <button onClick={addCombatant} style={{ background: 'var(--crimson)', border: '1px solid rgba(201,168,76,.4)', borderRadius: 5, color: '#f5f0e1', fontFamily: 'Georgia, serif', fontSize: 12, padding: '5px 12px', cursor: 'pointer', whiteSpace: 'nowrap' }}>+ Add</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function crLabel(cr) {
   if (cr === 0)     return '0'
   if (cr === 0.125) return '1/8'
@@ -79,6 +270,8 @@ export default function EncounterCalc({
 }) {
   const [monSearch, setMonSearch] = useState('')
   const [dropOpen,  setDropOpen]  = useState(false)
+  const [showTracker, setShowTracker] = useState(false)
+  const [trackerKey, setTrackerKey]   = useState(0) // increment to reset tracker
 
   const result = calcDifficulty(encounter, partySize, partyLevel)
 
@@ -94,7 +287,9 @@ export default function EncounterCalc({
   }
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+    <div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
 
       {/* ── Left panel: party + monsters ── */}
       <div style={panelStyle}>
@@ -193,16 +388,16 @@ export default function EncounterCalc({
                 </div>
               </div>
             ))}
-            <button
-              onClick={onClear}
-              style={{
-                background: 'none', border: '1px solid var(--border)',
-                borderRadius: 4, color: 'var(--muted)',
-                fontSize: 12, padding: '4px 10px',
-                cursor: 'pointer', marginTop: 6,
-                fontFamily: 'Georgia, serif',
-              }}
-            >Clear all</button>
+            <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+              <button
+                onClick={onClear}
+                style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 4, color: 'var(--muted)', fontSize: 12, padding: '4px 10px', cursor: 'pointer', fontFamily: 'Georgia, serif' }}
+              >Clear all</button>
+              <button
+                onClick={() => { setTrackerKey(k => k + 1); setShowTracker(true) }}
+                style={{ background: 'rgba(201,168,76,.12)', border: '1px solid var(--gold)', borderRadius: 4, color: 'var(--gold)', fontSize: 12, padding: '4px 12px', cursor: 'pointer', fontFamily: 'Georgia, serif', fontWeight: 'bold' }}
+              >⚔ Track Combat</button>
+            </div>
           </>
         )}
       </div>
@@ -272,6 +467,16 @@ export default function EncounterCalc({
           </>
         )}
       </div>
+      </div>
+
+      {/* ── Initiative Tracker ── */}
+      {showTracker && (
+        <InitiativeTracker
+          key={trackerKey}
+          encounter={encounter}
+          onEnd={() => setShowTracker(false)}
+        />
+      )}
     </div>
   )
 }

@@ -16,6 +16,7 @@ import CampaignManager  from './components/tabs/CampaignManager'
 import DiceRoller       from './components/tabs/DiceRoller'
 import LandingPage      from './components/LandingPage'
 import CharacterBuilder from './components/tabs/CharacterBuilder'
+import Generators       from './components/tabs/Generators'
 
 const TABS = [
   { id: 'conditions',  label: 'Conditions',     paid: false },
@@ -29,6 +30,7 @@ const TABS = [
   { id: 'encounter',   label: 'Encounter Calc',  paid: false },
   { id: 'campaign',    label: 'Campaign Manager', paid: false },
   { id: 'builder',    label: 'Character Builder', paid: false },
+  { id: 'generators', label: 'Generators',        paid: false },
 ]
 
 // Sits inside <VersionProvider> so it can call useVersion
@@ -402,6 +404,7 @@ export default function App() {
               }}
             />
           )}
+          {currentTab === 'generators' && <Generators />}
           {currentTab === 'builder'   && (
             <CharacterBuilder
               editCharId={editCharId}

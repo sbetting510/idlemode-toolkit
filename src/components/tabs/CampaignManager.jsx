@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useCampaign } from '../../hooks/useCampaign'
 import { printCharacter } from './CharacterBuilder'
-import { ABILITY_SHORT, ABILITY_LABELS, ABILITIES, SKILLS, PROF_BONUS, abilityMod, modStr } from '../../data/characterData'
+import { ABILITY_SHORT, ABILITY_LABELS, ABILITIES, SKILLS, PROF_BONUS, abilityMod, modStr, XP_LEVELS } from '../../data/characterData'
 
 const MODULES = [
   { id: 'overview',   label: 'Overview',    icon: '⚔' },
@@ -11,6 +11,7 @@ const MODULES = [
   { id: 'loot',       label: 'Loot',        icon: '💰' },
   { id: 'npcs',       label: 'NPCs',        icon: '👥' },
   { id: 'quests',     label: 'Quests',      icon: '📜' },
+  { id: 'spells',     label: 'Party Spells', icon: '✨' },
 ]
 
 const DISPOSITIONS = ['Friendly','Neutral','Hostile','Unknown']
@@ -154,10 +155,12 @@ const rarityColors       = { Common:'#888', Uncommon:'#90c870', Rare:'#90b8f8', 
 const charStatusColors   = { Active:'#90c870', Inactive:'#f5c842', Dead:'#f09595', Retired:'#888' }
 
 // ── Overview ──
-function Overview({ campaign, updateMeta, resetCampaign }) {
+function Overview({ campaign, updateMeta, resetCampaign, exportCampaign, importCampaign }) {
   const [editing, setEditing] = useState(false)
   const [name, setName]       = useState(campaign.name)
   const [setting, setSetting] = useState(campaign.setting || '')
+  const [importError, setImportError] = useState('')
+  const [importSuccess, setImportSuccess] = useState(false)
 
   function save() {
     updateMeta({ name, setting })
@@ -234,9 +237,48 @@ function Overview({ campaign, updateMeta, resetCampaign }) {
       </div>
 
       <div style={{ borderTop: '1px solid var(--border)', paddingTop: '1rem', marginTop: '0.5rem' }}>
-        <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 8 }}>
+        <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 10 }}>
           Campaign data is saved automatically in your browser. Clearing browser data will erase it.
+          <strong style={{ color: '#f5c842' }}> Export a backup regularly to keep it safe.</strong>
         </div>
+
+        {/* Export / Import */}
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
+          <button style={{ ...btnPrimary, background: 'rgba(144,200,112,0.15)', border: '1px solid #90c870', color: '#90c870' }} onClick={exportCampaign}>
+            ⬇ Export backup
+          </button>
+          <label style={{ ...btnGhost, cursor: 'pointer', display: 'inline-flex', alignItems: 'center' }}>
+            ⬆ Import backup
+            <input
+              type="file"
+              accept=".json"
+              style={{ display: 'none' }}
+              onChange={async (e) => {
+                const file = e.target.files[0]
+                if (!file) return
+                e.target.value = ''
+                setImportError('')
+                setImportSuccess(false)
+                if (!window.confirm('Import this backup? Your current campaign data will be replaced.')) return
+                try {
+                  await importCampaign(file)
+                  setImportSuccess(true)
+                  setTimeout(() => setImportSuccess(false), 4000)
+                } catch (err) {
+                  setImportError(err.message)
+                }
+              }}
+            />
+          </label>
+        </div>
+
+        {importSuccess && (
+          <div style={{ fontSize: 12, color: '#90c870', marginBottom: 8 }}>✓ Campaign imported successfully.</div>
+        )}
+        {importError && (
+          <div style={{ fontSize: 12, color: '#f09595', marginBottom: 8 }}>⚠ {importError}</div>
+        )}
+
         <button
           style={{ ...btnGhost, color: '#f09595', borderColor: 'rgba(240,100,100,0.3)' }}
           onClick={() => { if (window.confirm('Reset all campaign data? This cannot be undone.')) resetCampaign() }}
@@ -258,6 +300,43 @@ function DMPanel({ c, module }) {
     if (!isNaN(val)) module.update(c.id, { hp: val })
   }
 
+  // Spell slot tracking — usedSpellSlots is an array parallel to spellSlots
+  const slots = Array.isArray(c.spellSlots) ? c.spellSlots : []
+  const used  = Array.isArray(c.usedSpellSlots) ? c.usedSpellSlots : slots.map(() => 0)
+
+  function toggleSlotUsed(levelIdx, slotIdx) {
+    const nextUsed = used.map((u, i) => {
+      if (i !== levelIdx) return u
+      // clicking below used count restores, clicking at/above uses one
+      return slotIdx < u ? u - 1 : u + 1
+    })
+    module.update(c.id, { usedSpellSlots: nextUsed })
+  }
+
+  function shortRest() {
+    // Short rest: restore no spell slots (RAW), but reset death saves
+    module.update(c.id, { deathSaves: { successes: 0, failures: 0 } })
+  }
+
+  function longRest() {
+    module.update(c.id, {
+      hp: c.maxHp || c.hp,
+      usedSpellSlots: slots.map(() => 0),
+      deathSaves: { successes: 0, failures: 0 },
+    })
+  }
+
+  // Death saves — shown when HP = 0
+  const deathSaves  = c.deathSaves || { successes: 0, failures: 0 }
+  const isDying     = parseInt(c.hp) <= 0 && c.maxHp
+
+  function toggleDeathSave(type, idx) {
+    const current = deathSaves[type] || 0
+    // clicking at/above current count adds, clicking below removes
+    const next = idx < current ? current - 1 : current + 1
+    module.update(c.id, { deathSaves: { ...deathSaves, [type]: Math.min(next, 3) } })
+  }
+
   // Saving throws
   const savingThrows = ABILITIES.map(ab => {
     const proficient = (c.savingThrows || []).includes(ab)
@@ -272,15 +351,47 @@ function DMPanel({ c, module }) {
     return { ...skill, proficient, bonus }
   })
 
-  // Spell slots — stored as array [l1count, l2count, ...]
-  const slots = Array.isArray(c.spellSlots) ? c.spellSlots : []
-  const hasSlots = slots.some(n => n > 0)
-
   const dmLabel = { fontSize:9, color:'var(--gold)', fontFamily:'sans-serif', textTransform:'uppercase', letterSpacing:'.06em', marginBottom:4 }
   const divider = { borderTop:'1px solid rgba(255,255,255,.06)', marginTop:12, paddingTop:12 }
 
+  // Active conditions
+  const CONDITIONS = ['Blinded','Charmed','Deafened','Exhausted','Frightened','Grappled','Incapacitated','Invisible','Paralyzed','Petrified','Poisoned','Prone','Restrained','Stunned','Unconscious']
+  const activeConditions = Array.isArray(c.activeConditions) ? c.activeConditions : []
+
+  function toggleCondition(cond) {
+    const next = activeConditions.includes(cond)
+      ? activeConditions.filter(x => x !== cond)
+      : [...activeConditions, cond]
+    module.update(c.id, { activeConditions: next })
+  }
+
   return (
     <div style={{ marginTop:10, ...divider }}>
+
+      {/* Active Conditions */}
+      <div style={{ marginBottom:12 }}>
+        <div style={dmLabel}>Active Conditions</div>
+        <div style={{ display:'flex', flexWrap:'wrap', gap:4 }}>
+          {CONDITIONS.map(cond => {
+            const active = activeConditions.includes(cond)
+            return (
+              <button
+                key={cond}
+                onClick={() => toggleCondition(cond)}
+                title={active ? `Remove ${cond}` : `Apply ${cond}`}
+                style={{
+                  fontSize:10, fontFamily:'sans-serif', padding:'2px 8px',
+                  borderRadius:3, cursor:'pointer', border:'1px solid',
+                  background: active ? 'rgba(240,149,149,.15)' : 'rgba(255,255,255,.04)',
+                  color: active ? '#f09595' : 'var(--muted)',
+                  borderColor: active ? 'rgba(240,149,149,.5)' : 'rgba(255,255,255,.1)',
+                  fontWeight: active ? 'bold' : 'normal',
+                }}
+              >{cond}</button>
+            )
+          })}
+        </div>
+      </div>
 
       {/* HP editor + Passive Perception */}
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:12 }}>
@@ -353,27 +464,123 @@ function DMPanel({ c, module }) {
         </div>
       </div>
 
-      {/* Spell Slots */}
-      {hasSlots && (
+      {/* Spell Slots — interactive */}
+      {slots.some(n => n > 0) && (
         <div style={divider}>
-          <div style={dmLabel}>Spell Slots</div>
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:6 }}>
+            <div style={dmLabel}>Spell Slots</div>
+            <div style={{ display:'flex', gap:4 }}>
+              <button style={{ ...btnGhost, padding:'2px 8px', fontSize:10, color:'#90b8f8', borderColor:'rgba(144,184,248,.3)' }} onClick={shortRest} title="Short rest — resets death saves">Short Rest</button>
+              <button style={{ ...btnGhost, padding:'2px 8px', fontSize:10, color:'#90c870', borderColor:'rgba(144,200,112,.3)' }} onClick={longRest} title="Long rest — restore all slots and HP">Long Rest</button>
+            </div>
+          </div>
           <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
-            {slots.map((count, i) => count > 0 ? (
-              <div key={i} style={{
-                background:'rgba(208,144,248,.1)', border:'1px solid rgba(208,144,248,.3)',
-                borderRadius:4, padding:'3px 10px', textAlign:'center',
-              }}>
-                <div style={{ fontSize:13, fontWeight:'bold', color:'#d090f8' }}>{count}</div>
-                <div style={{ fontSize:9, color:'var(--muted)', fontFamily:'sans-serif' }}>L{i+1}</div>
-              </div>
-            ) : null)}
+            {slots.map((count, levelIdx) => {
+              if (count <= 0) return null
+              const usedCount = used[levelIdx] || 0
+              return (
+                <div key={levelIdx} style={{ background:'rgba(208,144,248,.06)', border:'1px solid rgba(208,144,248,.25)', borderRadius:6, padding:'4px 8px', textAlign:'center', minWidth:52 }}>
+                  <div style={{ fontSize:9, color:'#d090f8', fontFamily:'sans-serif', marginBottom:4 }}>L{levelIdx+1}</div>
+                  <div style={{ display:'flex', gap:3, justifyContent:'center', flexWrap:'wrap' }}>
+                    {Array.from({ length: count }).map((_, slotIdx) => {
+                      const isUsed = slotIdx < usedCount
+                      return (
+                        <div
+                          key={slotIdx}
+                          onClick={() => toggleSlotUsed(levelIdx, slotIdx)}
+                          title={isUsed ? 'Click to restore' : 'Click to expend'}
+                          style={{
+                            width:14, height:14, borderRadius:'50%', cursor:'pointer',
+                            background: isUsed ? 'transparent' : '#d090f8',
+                            border: `2px solid ${isUsed ? 'rgba(208,144,248,.4)' : '#d090f8'}`,
+                            transition:'background 0.15s',
+                          }}
+                        />
+                      )
+                    })}
+                  </div>
+                  <div style={{ fontSize:9, color:'var(--muted)', fontFamily:'sans-serif', marginTop:3 }}>
+                    {count - usedCount}/{count}
+                  </div>
+                </div>
+              )
+            })}
             {(c.cantrips?.length > 0) && (
-              <div style={{ background:'rgba(208,144,248,.06)', border:'1px solid rgba(208,144,248,.2)', borderRadius:4, padding:'3px 10px', textAlign:'center' }}>
+              <div style={{ background:'rgba(208,144,248,.04)', border:'1px solid rgba(208,144,248,.15)', borderRadius:6, padding:'4px 8px', textAlign:'center', minWidth:52 }}>
                 <div style={{ fontSize:13, fontWeight:'bold', color:'#d090f8' }}>{c.cantrips.length}</div>
                 <div style={{ fontSize:9, color:'var(--muted)', fontFamily:'sans-serif' }}>Cantrips</div>
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Death Saves — shown when HP = 0 */}
+      {isDying && (
+        <div style={{ ...divider, background:'rgba(240,100,100,.06)', border:'1px solid rgba(240,100,100,.25)', borderRadius:6, padding:'10px 12px', marginTop:12 }}>
+          <div style={{ fontSize:10, color:'#f09595', fontFamily:'sans-serif', textTransform:'uppercase', letterSpacing:'.06em', marginBottom:8, fontWeight:'bold' }}>
+            ☠ Death Saves
+          </div>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+            {[['successes','Successes','#90c870'],['failures','Failures','#f09595']].map(([type, label, color]) => (
+              <div key={type}>
+                <div style={{ fontSize:9, color:'var(--muted)', fontFamily:'sans-serif', marginBottom:5 }}>{label}</div>
+                <div style={{ display:'flex', gap:5 }}>
+                  {[0,1,2].map(idx => {
+                    const filled = idx < (deathSaves[type] || 0)
+                    return (
+                      <div
+                        key={idx}
+                        onClick={() => toggleDeathSave(type, idx)}
+                        style={{
+                          width:20, height:20, borderRadius:'50%', cursor:'pointer',
+                          background: filled ? color : 'transparent',
+                          border: `2px solid ${filled ? color : 'rgba(255,255,255,.25)'}`,
+                          transition:'background 0.15s',
+                        }}
+                      />
+                    )
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+          {deathSaves.failures >= 3 && (
+            <div style={{ fontSize:11, color:'#f09595', marginTop:8, fontStyle:'italic' }}>Character has died — 3 failed death saves.</div>
+          )}
+          {deathSaves.successes >= 3 && (
+            <div style={{ fontSize:11, color:'#90c870', marginTop:8, fontStyle:'italic' }}>Stabilized — 3 successful death saves.</div>
+          )}
+        </div>
+      )}
+
+      {/* Spells */}
+      {(c.cantrips?.length > 0 || c.spells?.length > 0) && (
+        <div style={divider}>
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:6 }}>
+            <div style={dmLabel}>Spells</div>
+            {c.spellcastingAbility && (
+              <span style={{ fontSize:9, color:'var(--muted)', fontFamily:'sans-serif' }}>
+                Save DC {8 + (c.profBonus || prof) + abilityMod(c[c.spellcastingAbility] || 10)} · Attack +{(c.profBonus || prof) + abilityMod(c[c.spellcastingAbility] || 10)}
+              </span>
+            )}
+          </div>
+          {c.cantrips?.length > 0 && (
+            <div style={{ marginBottom:6 }}>
+              <div style={{ fontSize:9, color:'#d090f8', fontFamily:'sans-serif', textTransform:'uppercase', letterSpacing:'.05em', marginBottom:4 }}>Cantrips</div>
+              <div style={{ display:'flex', flexWrap:'wrap', gap:3 }}>
+                {c.cantrips.map(s => <span key={s} style={{ fontSize:10, fontFamily:'sans-serif', padding:'1px 7px', borderRadius:3, background:'rgba(208,144,248,.1)', border:'1px solid rgba(208,144,248,.25)', color:'#d090f8' }}>{s}</span>)}
+              </div>
+            </div>
+          )}
+          {c.spells?.length > 0 && (
+            <div>
+              <div style={{ fontSize:9, color:'#90b8f8', fontFamily:'sans-serif', textTransform:'uppercase', letterSpacing:'.05em', marginBottom:4 }}>Known / Prepared</div>
+              <div style={{ display:'flex', flexWrap:'wrap', gap:3 }}>
+                {c.spells.map(s => <span key={s} style={{ fontSize:10, fontFamily:'sans-serif', padding:'1px 7px', borderRadius:3, background:'rgba(144,184,248,.08)', border:'1px solid rgba(144,184,248,.25)', color:'#90b8f8' }}>{s}</span>)}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -418,15 +625,191 @@ function DMPanel({ c, module }) {
           <div style={{ fontSize:11, color:'var(--parch2)', lineHeight:1.6 }}>{c.backstory}</div>
         </div>
       )}
+
+      {/* Character Journal */}
+      <CharacterJournal c={c} module={module} divider={divider} dmLabel={dmLabel} />
+    </div>
+  )
+}
+
+// ── Character Journal ──────────────────────────────────────────────────────────
+function CharacterJournal({ c, module, divider, dmLabel }) {
+  const journal = Array.isArray(c.journal) ? [...c.journal].sort((a, b) => b.createdAt - a.createdAt) : []
+  const [adding, setAdding]   = useState(false)
+  const [editing, setEditing] = useState(null)
+  const blank = { title: '', body: '', date: new Date().toISOString().slice(0, 10) }
+  const [form, setForm]       = useState(blank)
+
+  function submit() {
+    if (!form.body.trim()) return
+    const existing = c.journal || []
+    if (editing) {
+      module.update(c.id, { journal: existing.map(e => e.id === editing ? { ...e, ...form } : e) })
+      setEditing(null)
+    } else {
+      const entry = { ...form, id: Date.now().toString(36) + Math.random().toString(36).slice(2), createdAt: Date.now() }
+      module.update(c.id, { journal: [...existing, entry] })
+      setAdding(false)
+    }
+    setForm(blank)
+  }
+
+  function removeEntry(id) {
+    module.update(c.id, { journal: (c.journal || []).filter(e => e.id !== id) })
+  }
+
+  function startEdit(entry) {
+    setForm({ title: entry.title || '', body: entry.body, date: entry.date || new Date().toISOString().slice(0, 10) })
+    setEditing(entry.id)
+    setAdding(false)
+  }
+
+  return (
+    <div style={divider}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+        <div style={dmLabel}>Character Journal</div>
+        {!adding && !editing && (
+          <button
+            onClick={() => { setAdding(true); setForm(blank) }}
+            style={{ ...btnPrimary, fontSize: 10, padding: '2px 8px' }}
+          >+ Entry</button>
+        )}
+      </div>
+
+      {(adding || editing) && (
+        <div style={{ background: 'rgba(201,168,76,.04)', border: '1px solid rgba(201,168,76,.2)', borderRadius: 6, padding: '8px 10px', marginBottom: 8 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 6, marginBottom: 6 }}>
+            <input
+              style={{ ...inputStyle, fontSize: 12 }}
+              value={form.title}
+              onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
+              placeholder="Entry title (optional)..."
+            />
+            <input
+              type="date"
+              style={{ ...inputStyle, fontSize: 12, width: 130 }}
+              value={form.date}
+              onChange={e => setForm(f => ({ ...f, date: e.target.value }))}
+            />
+          </div>
+          <textarea
+            style={{ ...inputStyle, resize: 'vertical', minHeight: 80, fontSize: 12 }}
+            value={form.body}
+            onChange={e => setForm(f => ({ ...f, body: e.target.value }))}
+            placeholder="Write from your character's perspective..."
+          />
+          <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
+            <button style={{ ...btnPrimary, fontSize: 11, padding: '3px 10px' }} onClick={submit}>{editing ? 'Save' : 'Add entry'}</button>
+            <button style={{ ...btnGhost, fontSize: 11, padding: '3px 10px' }} onClick={() => { setAdding(false); setEditing(null) }}>Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {journal.length === 0 && !adding && (
+        <div style={{ fontSize: 11, color: 'var(--muted)', fontStyle: 'italic' }}>No journal entries yet. Record this character's story.</div>
+      )}
+
+      {journal.map(entry => (
+        <div key={entry.id} style={{ borderBottom: '1px solid rgba(255,255,255,.06)', paddingBottom: 8, marginBottom: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 6 }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
+                {entry.title && <span style={{ fontSize: 12, fontWeight: 'bold', color: 'var(--gold)' }}>{entry.title}</span>}
+                {entry.date && <span style={{ fontSize: 10, color: 'var(--muted)', fontFamily: 'sans-serif' }}>{entry.date}</span>}
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--parch2)', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{entry.body}</div>
+            </div>
+            <div style={{ display: 'flex', gap: 3, flexShrink: 0 }}>
+              <button style={{ ...btnGhost, fontSize: 10, padding: '1px 6px' }} onClick={() => startEdit(entry)}>✏</button>
+              <button style={{ ...btnDanger, fontSize: 12 }} onClick={() => removeEntry(entry.id)}>×</button>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// ── XP Bar (inline on character card) ──
+function XPBar({ c, module }) {
+  const level      = Math.min(parseInt(c.level) || 1, 20)
+  const currentXP  = parseInt(c.xp) || 0
+  const nextXP     = XP_LEVELS[level] // XP needed for next level (undefined at 20)
+  const prevXP     = XP_LEVELS[level - 1] || 0
+  const isMaxLevel = level >= 20
+  const levelReady = !isMaxLevel && nextXP !== undefined && currentXP >= nextXP
+
+  const [editing, setEditing] = useState(false)
+  const [input, setInput]     = useState(String(currentXP))
+
+  function saveXP() {
+    const val = parseInt(input)
+    if (!isNaN(val) && val >= 0) module.update(c.id, { xp: val })
+    setEditing(false)
+  }
+
+  const xpInLevel  = currentXP - prevXP
+  const xpForLevel = nextXP ? nextXP - prevXP : 1
+  const pct        = isMaxLevel ? 100 : Math.min((xpInLevel / xpForLevel) * 100, 100)
+
+  return (
+    <div style={{ display:'flex', alignItems:'center', gap:6, flexWrap:'wrap' }}>
+      <span style={{ fontSize:11, color:'var(--muted)' }}>XP</span>
+      {editing ? (
+        <input
+          autoFocus
+          type="number" min={0} value={input}
+          onChange={e => setInput(e.target.value)}
+          onBlur={saveXP}
+          onKeyDown={e => { if (e.key === 'Enter') saveXP(); if (e.key === 'Escape') setEditing(false) }}
+          style={{ width:80, background:'#1a1a2e', border:'1px solid var(--border2)', borderRadius:4, color:'#f5f0e1', fontFamily:'sans-serif', fontSize:11, padding:'1px 6px', outline:'none', textAlign:'center' }}
+        />
+      ) : (
+        <span
+          onClick={() => { setInput(String(currentXP)); setEditing(true) }}
+          title="Click to edit XP"
+          style={{ fontSize:11, color:'var(--parch2)', fontFamily:'sans-serif', cursor:'pointer', textDecoration:'underline dotted', textUnderlineOffset:2 }}
+        >
+          {currentXP.toLocaleString()}{!isMaxLevel && nextXP ? ` / ${nextXP.toLocaleString()}` : ''}
+        </span>
+      )}
+      {!isMaxLevel && nextXP && (
+        <div style={{ width:70, height:4, background:'rgba(255,255,255,.08)', borderRadius:2, overflow:'hidden' }}>
+          <div style={{ width:`${pct}%`, height:'100%', background: levelReady ? '#90c870' : '#90b8f8', borderRadius:2, transition:'width 0.3s' }} />
+        </div>
+      )}
+      {levelReady && (
+        <span style={{ fontSize:9, fontFamily:'sans-serif', fontWeight:'bold', padding:'1px 6px', borderRadius:3, background:'rgba(144,200,112,.2)', color:'#90c870', border:'1px solid rgba(144,200,112,.5)', animation:'pulse 1.5s infinite' }}>
+          ⬆ LEVEL UP!
+        </span>
+      )}
+      {isMaxLevel && (
+        <span style={{ fontSize:9, fontFamily:'sans-serif', color:'var(--gold)', padding:'1px 6px', borderRadius:3, background:'rgba(201,168,76,.1)', border:'1px solid rgba(201,168,76,.3)' }}>Max Level</span>
+      )}
     </div>
   )
 }
 
 // ── Characters ──
-function Characters({ campaign, module, onOpenBuilder }) {
+function Characters({ campaign, module, onOpenBuilder, loot, sessions }) {
   const [adding, setAdding]   = useState(false)
   const [editing, setEditing] = useState(null)
   const [expandedIds, setExpandedIds] = useState(new Set())
+  const [xpGranted, setXpGranted] = useState(false)
+
+  const totalSessionXP = (sessions || []).reduce((sum, s) => sum + (parseInt(s.xpAwarded) || 0), 0)
+
+  function grantSessionXPToAll() {
+    if (!totalSessionXP) return
+    campaign.characters
+      .filter(c => c.str !== undefined && (c.status || 'Active') === 'Active')
+      .forEach(c => {
+        const newXP = (parseInt(c.xp) || 0) + totalSessionXP
+        module.update(c.id, { xp: newXP })
+      })
+    setXpGranted(true)
+    setTimeout(() => setXpGranted(false), 3000)
+  }
   const blank = { name:'', race:'', class:'', level:1, hp:'', maxHp:'', ac:'', status:'Active', notes:'' }
   const [form, setForm] = useState(blank)
 
@@ -461,6 +844,21 @@ function Characters({ campaign, module, onOpenBuilder }) {
         onAdd={() => { setAdding(true); setEditing(null); setForm(blank) }}
         addLabel={onOpenBuilder ? '+ Quick add' : '+ Add'}
       />
+
+      {/* Session XP banner */}
+      {totalSessionXP > 0 && (
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:8, background:'rgba(144,184,248,.06)', border:'1px solid rgba(144,184,248,.2)', borderRadius:6, padding:'6px 10px', marginBottom:'0.75rem', flexWrap:'wrap' }}>
+          <span style={{ fontSize:12, color:'var(--parch2)', fontFamily:'sans-serif' }}>
+            Total XP from sessions: <strong style={{ color:'#90b8f8' }}>{totalSessionXP.toLocaleString()} XP</strong>
+          </span>
+          <button
+            style={{ ...btnPrimary, fontSize:11, padding:'3px 10px', background:'rgba(144,184,248,.15)', border:'1px solid rgba(144,184,248,.4)', color:'#90b8f8' }}
+            onClick={grantSessionXPToAll}
+          >
+            {xpGranted ? '✓ Granted!' : '+ Grant to all active PCs'}
+          </button>
+        </div>
+      )}
 
       {onOpenBuilder && (
         <div style={{ marginBottom:'0.75rem' }}>
@@ -505,6 +903,23 @@ function Characters({ campaign, module, onOpenBuilder }) {
           const full      = isBuilderChar(c)
           const expanded  = expandedIds.has(c.id)
 
+          // Encumbrance — only for builder chars that have STR
+          const str           = c.str || 0
+          const carryMax      = str * 15
+          const encThreshold  = str * 5
+          const heavyThreshold= str * 10
+          const carriedWeight = full && loot
+            ? loot.filter(item => item.claimedBy && item.claimedBy.trim().toLowerCase() === c.name.trim().toLowerCase())
+                  .reduce((sum, item) => sum + (parseFloat(item.weight) || 0), 0)
+            : 0
+          const encStatus = !full || !str ? null
+            : carriedWeight >= carryMax      ? 'Over Capacity'
+            : carriedWeight >= heavyThreshold ? 'Heavily Encumbered'
+            : carriedWeight >= encThreshold   ? 'Encumbered'
+            : 'Normal'
+          const encColor = { Normal:'#90c870', Encumbered:'#f5c842', 'Heavily Encumbered':'#f09595', 'Over Capacity':'#d090f8' }
+          const encPct   = carryMax > 0 ? Math.min((carriedWeight / carryMax) * 100, 100) : 0
+
           return (
             <div key={c.id} style={{ ...cardStyle, borderLeft:`3px solid ${charStatusColors[c.status]||'var(--border)'}` }}>
 
@@ -524,6 +939,15 @@ function Characters({ campaign, module, onOpenBuilder }) {
                     {c.alignment  && <span style={{ fontSize:11, color:'var(--muted)' }}>{c.alignment}</span>}
                   </div>
 
+                  {/* Active condition badges */}
+                  {Array.isArray(c.activeConditions) && c.activeConditions.length > 0 && (
+                    <div style={{ display:'flex', flexWrap:'wrap', gap:3, marginBottom:4 }}>
+                      {c.activeConditions.map(cond => (
+                        <span key={cond} style={{ fontSize:9, fontFamily:'sans-serif', padding:'1px 6px', borderRadius:3, background:'rgba(240,149,149,.15)', color:'#f09595', border:'1px solid rgba(240,149,149,.4)', fontWeight:'bold' }}>{cond}</span>
+                      ))}
+                    </div>
+                  )}
+
                   {/* HP / AC / Speed / Prof / Init */}
                   <div style={{ display:'flex', alignItems:'center', gap:16, flexWrap:'wrap' }}>
                     {c.maxHp && (
@@ -540,6 +964,32 @@ function Characters({ campaign, module, onOpenBuilder }) {
                     {c.profBonus && <span style={{ fontSize:12, color:'var(--muted)' }}>Prof <strong style={{ color:'var(--gold)' }}>+{c.profBonus}</strong></span>}
                     {full && <span style={{ fontSize:12, color:'var(--muted)' }}>PP <strong style={{ color:'var(--parch2)' }}>{c.passivePerception || (10+abilityMod(c.wis||10))}</strong></span>}
                   </div>
+
+                  {/* XP + Level-up */}
+                  {full && (c.xp !== undefined) && (
+                    <div style={{ display:'flex', alignItems:'center', gap:8, marginTop:4, flexWrap:'wrap' }}>
+                      <XPBar c={c} module={module} />
+                    </div>
+                  )}
+
+                  {/* Encumbrance bar */}
+                  {((encStatus && encStatus !== 'Normal') || (encStatus === 'Normal' && carriedWeight > 0)) ? (
+                    <div style={{ display:'flex', alignItems:'center', gap:8, marginTop:5, flexWrap:'wrap' }}>
+                      <span style={{ fontSize:11, color:'var(--muted)' }}>
+                        Carry <strong style={{ color: encColor[encStatus] }}>{carriedWeight.toFixed(1)} / {carryMax} lb</strong>
+                      </span>
+                      <div style={{ flex:1, minWidth:80, maxWidth:120, height:5, background:'rgba(255,255,255,.08)', borderRadius:3, overflow:'hidden' }}>
+                        <div style={{ width:`${encPct}%`, height:'100%', background: encColor[encStatus], borderRadius:3, transition:'width 0.3s' }} />
+                      </div>
+                      {encStatus !== 'Normal' && (
+                        <span style={{ fontSize:10, fontFamily:'sans-serif', padding:'1px 6px', borderRadius:3,
+                          background:`${encColor[encStatus]}22`, color: encColor[encStatus],
+                          border:`1px solid ${encColor[encStatus]}66`, fontWeight:'bold' }}>
+                          {encStatus}
+                        </span>
+                      )}
+                    </div>
+                  ) : null}
                 </div>
 
                 {/* Action buttons */}
@@ -762,7 +1212,7 @@ function Encounters({ campaign, module }) {
 function Loot({ campaign, module }) {
   const [adding, setAdding]   = useState(false)
   const [editing, setEditing] = useState(null)
-  const blank = { name:'', type:'Other', rarity:'Common', value:'', claimedBy:'', notes:'' }
+  const blank = { name:'', type:'Other', rarity:'Common', weight:'', goldValue:'', claimedBy:'', notes:'' }
   const [form, setForm]       = useState(blank)
 
   function submit() {
@@ -773,21 +1223,29 @@ function Loot({ campaign, module }) {
   }
 
   function startEdit(item) {
-    setForm({ name:item.name, type:item.type||'Other', rarity:item.rarity||'Common', value:item.value||'', claimedBy:item.claimedBy||'', notes:item.notes||'' })
+    setForm({ name:item.name, type:item.type||'Other', rarity:item.rarity||'Common', weight:item.weight||'', goldValue:item.goldValue||'', claimedBy:item.claimedBy||'', notes:item.notes||'' })
     setEditing(item.id); setAdding(false)
   }
+
+  const totalWeight = campaign.loot.reduce((sum, item) => sum + (parseFloat(item.weight) || 0), 0)
+  const totalGold   = campaign.loot.reduce((sum, item) => sum + (parseFloat(item.goldValue) || 0), 0)
 
   function cancel() { setAdding(false); setEditing(null) }
 
   return (
     <div>
       <SectionHeader title="Loot" onAdd={() => { setAdding(true); setEditing(null) }} addLabel="+ Add item" />
+      {campaign.loot.length > 0 && (
+        <div style={{ display:'flex', gap:16, marginBottom:'0.75rem', fontSize:12, fontFamily:'sans-serif', color:'var(--muted)' }}>
+          {totalWeight > 0 && <span>Total weight: <strong style={{ color:'var(--parch2)' }}>{totalWeight.toFixed(1)} lb</strong></span>}
+          {totalGold   > 0 && <span>Total value: <strong style={{ color:'#f5c842' }}>{totalGold.toLocaleString()} gp</strong></span>}
+        </div>
+      )}
 
   {(adding || editing) && (
     <div style={{ ...cardStyle, borderLeft:'3px solid var(--gold)', marginBottom:'1rem' }}>
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:8 }}>
         <Field label="Item name *"><input style={inputStyle} value={form.name} onChange={e => setForm(f => ({...f, name: e.target.value}))} placeholder="Item name..." /></Field>
-        <Field label="Value / qty"><input style={inputStyle} value={form.value} onChange={e => setForm(f => ({...f, value: e.target.value}))} placeholder="e.g. 250 gp" /></Field>
         <Field label="Type">
           <select style={selectStyle} value={form.type} onChange={e => setForm(f => ({...f, type: e.target.value}))}>
             {LOOT_TYPES.map(t => <option key={t} value={t} style={{background:'#16213e',color:'#f5f0e1'}}>{t}</option>)}
@@ -798,6 +1256,8 @@ function Loot({ campaign, module }) {
             {LOOT_RARITIES.map(r => <option key={r} value={r} style={{background:'#16213e',color:'#f5f0e1'}}>{r}</option>)}
           </select>
         </Field>
+        <Field label="Weight (lb)"><input style={inputStyle} type="number" min="0" step="0.1" value={form.weight} onChange={e => setForm(f => ({...f, weight: e.target.value}))} placeholder="0.0" /></Field>
+        <Field label="Value (gp)"><input style={inputStyle} type="number" min="0" value={form.goldValue} onChange={e => setForm(f => ({...f, goldValue: e.target.value}))} placeholder="0" /></Field>
         <Field label="Claimed by"><input style={inputStyle} value={form.claimedBy} onChange={e => setForm(f => ({...f, claimedBy: e.target.value}))} placeholder="Character name..." /></Field>
       </div>
       <Field label="Notes"><textarea style={{...inputStyle, resize:'vertical', minHeight:50}} value={form.notes} onChange={e => setForm(f => ({...f, notes: e.target.value}))} /></Field>
@@ -818,7 +1278,8 @@ function Loot({ campaign, module }) {
                   <span style={{ fontSize:14, fontWeight:'bold', color:'var(--gold2)' }}>{item.name}</span>
                   <StatusBadge status={item.rarity} colorMap={rarityColors} />
                   <span style={{ fontSize:11, color:'var(--muted)', fontFamily:'sans-serif' }}>{item.type}</span>
-                  {item.value     && <span style={{ fontSize:12, color:'#f5c842' }}>{item.value}</span>}
+                  {item.weight   && parseFloat(item.weight) > 0 && <span style={{ fontSize:11, color:'var(--muted)', fontFamily:'sans-serif' }}>⚖ {parseFloat(item.weight).toFixed(1)} lb</span>}
+                  {item.goldValue && parseFloat(item.goldValue) > 0 && <span style={{ fontSize:12, color:'#f5c842' }}>⟐ {parseFloat(item.goldValue).toLocaleString()} gp</span>}
                   {item.claimedBy && <span style={{ fontSize:12, color:'var(--muted)' }}>→ {item.claimedBy}</span>}
                 </div>
                 {item.notes && <div style={{ fontSize:12, color:'var(--parch2)', lineHeight:1.5 }}>{item.notes}</div>}
@@ -997,11 +1458,120 @@ function Quests({ campaign, module }) {
   )
 }
 
+// ── Party Spells ──────────────────────────────────────────────────────────────
+function PartySpells({ campaign }) {
+  const casters = campaign.characters.filter(c =>
+    c.str !== undefined && // builder char
+    (c.cantrips?.length > 0 || c.spells?.length > 0)
+  )
+
+  const [filter, setFilter] = useState('all') // 'all' | character id
+
+  const ABILITY_LABELS_LOCAL = { str:'Strength',dex:'Dexterity',con:'Constitution',int:'Intelligence',wis:'Wisdom',cha:'Charisma' }
+
+  const displayed = filter === 'all' ? casters : casters.filter(c => c.id === filter)
+
+  if (casters.length === 0) {
+    return (
+      <div>
+        <SectionHeader title="Party Spells" />
+        <EmptyState message="No spellcasters found. Build characters with spells in the Character Builder to see them here." />
+      </div>
+    )
+  }
+
+  return (
+    <div>
+      <SectionHeader title="Party Spells" />
+
+      {/* Filter by character */}
+      {casters.length > 1 && (
+        <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:'0.75rem' }}>
+          <button
+            onClick={() => setFilter('all')}
+            style={{ ...btnGhost, fontSize:11, padding:'3px 10px', ...(filter === 'all' ? { borderColor:'var(--gold)', color:'var(--gold)' } : {}) }}
+          >All casters</button>
+          {casters.map(c => (
+            <button
+              key={c.id}
+              onClick={() => setFilter(c.id)}
+              style={{ ...btnGhost, fontSize:11, padding:'3px 10px', ...(filter === c.id ? { borderColor:'var(--gold)', color:'var(--gold)' } : {}) }}
+            >{c.name}</button>
+          ))}
+        </div>
+      )}
+
+      {displayed.map(c => {
+        const prof    = c.profBonus || PROF_BONUS[c.level] || 2
+        const ability = c.spellcastingAbility
+        const saveDC  = ability ? 8 + prof + abilityMod(c[ability] || 10) : null
+        const atk     = ability ? prof + abilityMod(c[ability] || 10) : null
+
+        return (
+          <div key={c.id} style={{ ...cardStyle, borderLeft:'3px solid #d090f8' }}>
+            {/* Header */}
+            <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:10, flexWrap:'wrap' }}>
+              <span style={{ fontSize:14, fontWeight:'bold', color:'var(--gold2)' }}>{c.name}</span>
+              <span style={{ fontSize:12, color:'var(--muted)' }}>{[c.subrace||c.race, c.subclass||c.class].filter(Boolean).join(' ')} · Lvl {c.level}</span>
+              {saveDC && (
+                <>
+                  <span style={{ fontSize:11, fontFamily:'sans-serif', color:'var(--muted)' }}>
+                    {ABILITY_LABELS_LOCAL[ability] || ability} · Save DC <strong style={{ color:'#d090f8' }}>{saveDC}</strong> · Attack <strong style={{ color:'#d090f8' }}>+{atk}</strong>
+                  </span>
+                </>
+              )}
+            </div>
+
+            {/* Spell slots */}
+            {Array.isArray(c.spellSlots) && c.spellSlots.some(n => n > 0) && (
+              <div style={{ display:'flex', gap:4, flexWrap:'wrap', marginBottom:10 }}>
+                {c.spellSlots.map((count, i) => count > 0 ? (
+                  <span key={i} style={{ fontSize:10, fontFamily:'sans-serif', padding:'1px 8px', borderRadius:3, background:'rgba(208,144,248,.1)', border:'1px solid rgba(208,144,248,.25)', color:'#d090f8' }}>
+                    L{i+1} ×{count}
+                  </span>
+                ) : null)}
+              </div>
+            )}
+
+            {/* Cantrips */}
+            {c.cantrips?.length > 0 && (
+              <div style={{ marginBottom:8 }}>
+                <div style={{ fontSize:9, color:'#d090f8', fontFamily:'sans-serif', textTransform:'uppercase', letterSpacing:'.06em', marginBottom:5 }}>
+                  Cantrips ({c.cantrips.length})
+                </div>
+                <div style={{ display:'flex', flexWrap:'wrap', gap:4 }}>
+                  {c.cantrips.map(s => (
+                    <span key={s} style={{ fontSize:11, fontFamily:'sans-serif', padding:'2px 9px', borderRadius:4, background:'rgba(208,144,248,.1)', border:'1px solid rgba(208,144,248,.3)', color:'#d090f8' }}>{s}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Spells */}
+            {c.spells?.length > 0 && (
+              <div>
+                <div style={{ fontSize:9, color:'#90b8f8', fontFamily:'sans-serif', textTransform:'uppercase', letterSpacing:'.06em', marginBottom:5 }}>
+                  Spells Known / Prepared ({c.spells.length})
+                </div>
+                <div style={{ display:'flex', flexWrap:'wrap', gap:4 }}>
+                  {c.spells.map(s => (
+                    <span key={s} style={{ fontSize:11, fontFamily:'sans-serif', padding:'2px 9px', borderRadius:4, background:'rgba(144,184,248,.08)', border:'1px solid rgba(144,184,248,.3)', color:'#90b8f8' }}>{s}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 // ── Main component ──
 export default function CampaignManager({ onOpenBuilder, initialModule }) {
   const [activeModule, setActiveModule] = useState(initialModule || 'overview')
   const {
-    campaign, updateMeta, resetCampaign,
+    campaign, updateMeta, resetCampaign, exportCampaign, importCampaign,
     characters, sessions, encounters, loot, npcs, quests,
   } = useCampaign()
 
@@ -1049,13 +1619,14 @@ export default function CampaignManager({ onOpenBuilder, initialModule }) {
 
       {/* Content */}
       <div style={contentStyle}>
-        {activeModule === 'overview'   && <Overview    campaign={campaign} updateMeta={updateMeta} resetCampaign={resetCampaign} />}
-        {activeModule === 'characters' && <Characters  campaign={campaign} module={characters} onOpenBuilder={onOpenBuilder} />}
+        {activeModule === 'overview'   && <Overview    campaign={campaign} updateMeta={updateMeta} resetCampaign={resetCampaign} exportCampaign={exportCampaign} importCampaign={importCampaign} />}
+        {activeModule === 'characters' && <Characters  campaign={campaign} module={characters} onOpenBuilder={onOpenBuilder} loot={campaign.loot} sessions={campaign.sessions} />}
         {activeModule === 'sessions'   && <Sessions    campaign={campaign} module={sessions}   />}
         {activeModule === 'encounters' && <Encounters  campaign={campaign} module={encounters} />}
         {activeModule === 'loot'       && <Loot        campaign={campaign} module={loot}       />}
         {activeModule === 'npcs'       && <NPCs        campaign={campaign} module={npcs}       />}
         {activeModule === 'quests'     && <Quests      campaign={campaign} module={quests}     />}
+        {activeModule === 'spells'     && <PartySpells campaign={campaign} />}
       </div>
     </div>
   )

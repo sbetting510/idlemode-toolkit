@@ -85,10 +85,47 @@ export function useCampaign() {
     }
   }
 
+  function exportCampaign() {
+    const filename = `${(campaign.name || 'campaign').replace(/[^a-z0-9]/gi, '_').toLowerCase()}_backup.json`
+    const blob = new Blob([JSON.stringify(campaign, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  function importCampaign(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        try {
+          const data = JSON.parse(e.target.result)
+          // Basic validation — must have at least characters array
+          if (!data || typeof data !== 'object' || !Array.isArray(data.characters)) {
+            reject(new Error('Invalid campaign file.'))
+            return
+          }
+          const merged = { ...DEFAULT_CAMPAIGN, ...data }
+          save(merged)
+          setCampaign(merged)
+          resolve(merged)
+        } catch {
+          reject(new Error('Could not parse file. Make sure it is a valid backup JSON.'))
+        }
+      }
+      reader.onerror = () => reject(new Error('Failed to read file.'))
+      reader.readAsText(file)
+    })
+  }
+
   return {
     campaign,
     updateMeta,
     resetCampaign,
+    exportCampaign,
+    importCampaign,
     characters: makeModule('characters'),
     sessions:   makeModule('sessions'),
     encounters: makeModule('encounters'),
