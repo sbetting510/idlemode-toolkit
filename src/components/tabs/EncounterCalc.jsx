@@ -65,7 +65,8 @@ function InitiativeTracker({ encounter, onEnd, campaignCharacters }) {
   }
 
   function setHp(id, val) {
-    setCombatants(prev => prev.map(c => c.id === id ? { ...c, hp: val } : c))
+    const clamped = Math.max(0, parseInt(val) || 0)
+    setCombatants(prev => prev.map(c => c.id === id ? { ...c, hp: String(clamped) } : c))
   }
 
   function removeCombatant(id) {

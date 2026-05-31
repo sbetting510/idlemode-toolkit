@@ -1164,7 +1164,19 @@ function Encounters({ campaign, module }) {
     <div style={{ ...cardStyle, borderLeft:'3px solid var(--gold)', marginBottom:'1rem' }}>
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:8 }}>
         <Field label="Encounter name *"><input style={inputStyle} value={form.name} onChange={e => setForm(f => ({...f, name: e.target.value}))} placeholder="e.g. Goblin ambush..." /></Field>
-        <Field label="XP Awarded"><input style={inputStyle} type="number" placeholder="0" value={form.xpAwarded} onChange={e => setForm(f => ({...f, xpAwarded: e.target.value}))} /></Field>
+        <Field label="XP Awarded">
+          <div style={{ display:'flex', gap:4 }}>
+            <input style={inputStyle} type="number" placeholder="0" value={form.xpAwarded} onChange={e => setForm(f => ({...f, xpAwarded: e.target.value}))} />
+            {form.possibleXp && parseInt(form.possibleXp) > 0 && (
+              <button
+                type="button"
+                title="Award half XP (common house rule for fleeing)"
+                onClick={() => setForm(f => ({...f, xpAwarded: String(Math.floor(parseInt(f.possibleXp) / 2))}))}
+                style={{ ...btnGhost, fontSize:11, padding:'2px 8px', whiteSpace:'nowrap', flexShrink:0 }}
+              >½ XP</button>
+            )}
+          </div>
+        </Field>
         <Field label="Possible XP"><input style={inputStyle} type="number" placeholder="Total monster XP value" value={form.possibleXp} onChange={e => setForm(f => ({...f, possibleXp: e.target.value}))} /></Field>
         <Field label="Difficulty">
           <select style={selectStyle} value={form.difficulty} onChange={e => setForm(f => ({...f, difficulty: e.target.value}))}>
