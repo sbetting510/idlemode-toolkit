@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useCampaign } from '../../hooks/useCampaign'
 import { printCharacter } from './CharacterBuilder'
+import EncounterCalc from './EncounterCalc'
 import { ABILITY_SHORT, ABILITY_LABELS, ABILITIES, SKILLS, PROF_BONUS, abilityMod, modStr, XP_LEVELS } from '../../data/characterData'
 
 const MODULES = [
@@ -12,6 +13,7 @@ const MODULES = [
   { id: 'npcs',       label: 'NPCs',        icon: '👥' },
   { id: 'quests',     label: 'Quests',      icon: '📜' },
   { id: 'spells',     label: 'Party Spells', icon: '✨' },
+  { id: 'combat',     label: 'Combat',       icon: '⚔' },
 ]
 
 const DISPOSITIONS = ['Friendly','Neutral','Hostile','Unknown']
@@ -1567,6 +1569,76 @@ function PartySpells({ campaign }) {
   )
 }
 
+// ── Combat Module (Encounter Calc + Tracker embedded in Campaign Manager) ──────
+function CombatModule({ campaign }) {
+  const [encounter, setEncounter] = useState(() => {
+    // Pre-seed with active party members so the tracker knows about PCs
+    return []
+  })
+  const [partySize,  setPartySize]  = useState(() => campaign.characters.filter(c => c.status === 'Active' || !c.status).length || 4)
+  const [partyLevel, setPartyLevel] = useState(() => {
+    const active = campaign.characters.filter(c => c.str !== undefined && (c.status === 'Active' || !c.status))
+    if (!active.length) return 5
+    return Math.round(active.reduce((s, c) => s + (parseInt(c.level) || 1), 0) / active.length)
+  })
+
+  function addToEncounter(name, cr) {
+    setEncounter(prev => {
+      const existing = prev.find(e => e.name === name)
+      if (existing) return prev.map(e => e.name === name ? { ...e, qty: e.qty + 1 } : e)
+      return [...prev, { name, cr, qty: 1 }]
+    })
+  }
+
+  function changeQty(name, cr, delta, forceAdd = false) {
+    setEncounter(prev => {
+      const existing = prev.find(e => e.name === name)
+      if (forceAdd && !existing) return [...prev, { name, cr, qty: 1 }]
+      if (!existing) return prev
+      const newQty = existing.qty + delta
+      if (newQty <= 0) return prev.filter(e => e.name !== name)
+      return prev.map(e => e.name === name ? { ...e, qty: newQty } : e)
+    })
+  }
+
+  return (
+    <div>
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'0.75rem', paddingBottom:6, borderBottom:'1px solid var(--border)' }}>
+        <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+          <div style={{ width:8, height:8, borderRadius:'50%', background:'var(--gold)' }} />
+          <span style={{ fontSize:13, fontWeight:'bold', color:'var(--gold)', letterSpacing:'0.06em', textTransform:'uppercase' }}>Combat</span>
+        </div>
+      </div>
+
+      {/* Active party summary */}
+      {campaign.characters.filter(c => c.str !== undefined && (c.status === 'Active' || !c.status)).length > 0 && (
+        <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:'0.75rem' }}>
+          {campaign.characters
+            .filter(c => c.str !== undefined && (c.status === 'Active' || !c.status))
+            .map(c => (
+              <span key={c.id} style={{ fontSize:11, fontFamily:'sans-serif', padding:'2px 8px', borderRadius:4, background:'rgba(144,184,248,.1)', border:'1px solid rgba(144,184,248,.25)', color:'#90b8f8' }}>
+                {c.name} (Lvl {c.level})
+              </span>
+            ))
+          }
+        </div>
+      )}
+
+      <EncounterCalc
+        encounter={encounter}
+        partySize={partySize}
+        partyLevel={partyLevel}
+        onPartySize={setPartySize}
+        onPartyLevel={setPartyLevel}
+        onChangeQty={changeQty}
+        onRemove={name => setEncounter(prev => prev.filter(e => e.name !== name))}
+        onClear={() => setEncounter([])}
+        campaignCharacters={campaign.characters.filter(c => c.str !== undefined && (c.status === 'Active' || !c.status))}
+      />
+    </div>
+  )
+}
+
 // ── Main component ──
 export default function CampaignManager({ onOpenBuilder, initialModule }) {
   const [activeModule, setActiveModule] = useState(initialModule || 'overview')
@@ -1627,6 +1699,7 @@ export default function CampaignManager({ onOpenBuilder, initialModule }) {
         {activeModule === 'npcs'       && <NPCs        campaign={campaign} module={npcs}       />}
         {activeModule === 'quests'     && <Quests      campaign={campaign} module={quests}     />}
         {activeModule === 'spells'     && <PartySpells campaign={campaign} />}
+        {activeModule === 'combat'     && <CombatModule campaign={campaign} />}
       </div>
     </div>
   )

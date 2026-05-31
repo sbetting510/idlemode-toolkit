@@ -312,6 +312,108 @@ export const QUEST_THEMES = {
   },
 }
 
+// ── LOOT GENERATION ───────────────────────────────────────────────────────────
+const LOOT_ADJ = ['Ancient','Runed','Blessed','Cursed','Ornate','Battered','Gleaming','Shadow-forged','Blood-stained','Gilded','Enchanted','Masterwork','Arcane','Elven-crafted','Dwarven-made','Orcish','Infernal','Celestial','Tarnished','Legendary','Forgotten','Stolen','Ceremonial','Bone-inlaid','Gem-studded','Dragon-scale','Iron','Silver-threaded','War-worn','Ivory']
+const LOOT_WEAPON_NOUNS = ['Longsword','Shortsword','Greatsword','Dagger','Rapier','Scimitar','Battleaxe','Greataxe','Handaxe','Warhammer','Maul','Flail','Mace','Quarterstaff','Spear','Halberd','Glaive','Trident','Shortbow','Longbow','Crossbow','Hand Crossbow','Javelin','Whip','Sickle','Club']
+const LOOT_ARMOR_NOUNS  = ['Breastplate','Chain Mail','Scale Mail','Half-Plate','Full Plate','Leather Armor','Studded Leather','Ring Mail','Shield','Buckler','Tower Shield','Gauntlets','Greaves','Helm','Pauldrons','Vambraces','Gorget']
+const LOOT_MAGIC_NOUNS  = ['Amulet','Ring','Cloak','Boots','Gloves','Belt','Circlet','Bracers','Brooch','Pendant','Talisman','Medallion','Phylactery','Orb','Rod','Staff','Wand','Tome','Grimoire','Crystal','Lens','Prism','Idol','Effigy','Relic','Totem']
+const LOOT_POTION_ADJ   = ['Crimson','Azure','Emerald','Violet','Amber','Milky','Opalescent','Swirling','Bubbling','Steaming','Glowing','Smoky','Thick','Clear','Icy','Fiery']
+const LOOT_POTION_TYPES = ['Healing','Greater Healing','Superior Healing','Supreme Healing','Heroism','Speed','Invisibility','Flying','Gaseous Form','Diminution','Growth','Mind Reading','Poison','Fire Breath','Animal Friendship','Climbing','Water Breathing','Resistance','Vitality']
+const LOOT_MAGIC_OF     = ['the Dragon','the Undying','Shadows','the Storm','Fire','Ice','the Void','Stars','the Serpent','the Fallen King','Binding','Swiftness','the Mind','the Deep','Echoes','Misfortune','the Betrayer','Dawn','the Last War','Thorns']
+
+const LOOT_DESCRIPTIONS = {
+  Weapon: [
+    'The blade hums faintly when held.',
+    'Strange runes are etched along the fuller — none recognise the script.',
+    'The grip is wrapped in leather that never seems to wear.',
+    'A name is scratched into the pommel in a rough hand.',
+    'The metal is darker than it should be, as if light avoids it.',
+    'It feels perfectly balanced, despite its size.',
+    'Small gems are set into the crossguard — three are missing.',
+    'The edge never seems to dull, no matter the use.',
+    'It grows warm to the touch during a full moon.',
+    'A dried bloodstain on the blade refuses to wash off.',
+  ],
+  Armor: [
+    'The craftsmanship is exceptional — clearly made for someone important.',
+    'Old battle damage has been carefully repaired.',
+    'A crest has been scratched out from the chest plate.',
+    'It fits its wearer unnaturally well.',
+    'The inside is lined with silk that is somehow still pristine.',
+    'Small prayers are inscribed around the collar in a dead language.',
+    'It is heavier than it looks, yet feels lighter when worn.',
+    'A faint smell of smoke clings to it no matter how it is cleaned.',
+  ],
+  Magic: [
+    'It pulses with a warmth that has no obvious source.',
+    'When held up to firelight, shadowy figures move within it.',
+    'It whispers something just below the threshold of hearing.',
+    'The material is unlike anything the party has encountered before.',
+    'It grows cold when danger is near.',
+    'It was clearly important to its previous owner — they died clutching it.',
+    'Faint glyphs appear when it is held in moonlight.',
+    'It hums a single note when other magic is nearby.',
+  ],
+  Potion: [
+    'The stopper is sealed with wax bearing an unknown crest.',
+    'It smells of pine and something metallic.',
+    'The liquid shifts colour slowly when disturbed.',
+    'The label is water-damaged and mostly illegible.',
+    'It feels slightly warm, even in a cold room.',
+    'Tiny motes of light drift through the liquid.',
+  ],
+}
+
+const LOOT_WEIGHTS = {
+  Weapon: [1, 2, 3, 4, 6],
+  Armor:  [8, 13, 20, 40, 65],
+  Magic:  [0, 0.1, 0.5, 1],
+  Potion: [0.5],
+}
+
+const LOOT_VALUES = {
+  Common:     [10, 25, 50],
+  Uncommon:   [100, 200, 500],
+  Rare:       [1000, 2000, 5000],
+  'Very Rare':[10000, 15000, 25000],
+  Legendary:  [50000, 75000, 100000],
+  Artifact:   [250000],
+}
+
+export function generateLoot(rarityFilter = 'any') {
+  const rarities = ['Common','Common','Common','Uncommon','Uncommon','Rare','Rare','Very Rare','Legendary','Artifact']
+  const rarity = rarityFilter === 'any' ? pick(rarities) : rarityFilter
+
+  const category = pick(['Weapon','Weapon','Armor','Magic','Potion'])
+
+  let name, weight, type
+
+  if (category === 'Potion') {
+    name = `Potion of ${pick(LOOT_POTION_TYPES)}`
+    weight = 0.5
+    type = 'Potion'
+  } else if (category === 'Weapon') {
+    name = `${pick(LOOT_ADJ)} ${pick(LOOT_WEAPON_NOUNS)} of ${pick(LOOT_MAGIC_OF)}`
+    weight = pick(LOOT_WEIGHTS.Weapon)
+    type = 'Weapon'
+  } else if (category === 'Armor') {
+    name = `${pick(LOOT_ADJ)} ${pick(LOOT_ARMOR_NOUNS)}`
+    weight = pick(LOOT_WEIGHTS.Armor)
+    type = 'Armor'
+  } else {
+    name = `${pick(LOOT_ADJ)} ${pick(LOOT_MAGIC_NOUNS)} of ${pick(LOOT_MAGIC_OF)}`
+    weight = pick(LOOT_WEIGHTS.Magic)
+    type = 'Wondrous Item'
+  }
+
+  const valuePool = LOOT_VALUES[rarity] || LOOT_VALUES.Common
+  const goldValue = pick(valuePool)
+  const descPool  = LOOT_DESCRIPTIONS[category] || LOOT_DESCRIPTIONS.Magic
+  const notes     = pick(descPool)
+
+  return { name, type, rarity, weight: String(weight), goldValue: String(goldValue), notes, claimedBy: '' }
+}
+
 // ── GENERATORS ────────────────────────────────────────────────────────────────
 
 export function generateTavernName() {

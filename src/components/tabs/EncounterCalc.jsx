@@ -7,12 +7,26 @@ function d20() { return Math.floor(Math.random() * 20) + 1 }
 
 // ── Initiative Tracker ────────────────────────────────────────────────────────
 function InitiativeTracker({ encounter, onEnd }) {
-  // Build initial combatants from encounter (expand qty into individuals)
+  // Build initial combatants from encounter (expand qty into individuals) + campaign party
   function buildFromEncounter() {
     const list = []
+    // Add campaign party members first (PCs)
+    if (campaignCharacters?.length) {
+      campaignCharacters.forEach(c => {
+        list.push({
+          id: uid(), name: c.name,
+          initiative: 0,
+          hp: String(c.hp || c.maxHp || ''),
+          maxHp: String(c.maxHp || ''),
+          type: 'pc',
+          dexMod: c.dex ? Math.floor((parseInt(c.dex) - 10) / 2) : 0,
+        })
+      })
+    }
+    // Add monsters from encounter
     encounter.forEach(e => {
       const monsterData = MONSTERS.find(m => m[0] === e.name)
-      const hp = monsterData?.[5] || ''  // index 5 is avg HP in monster data
+      const hp = monsterData?.[5] || ''
       for (let i = 0; i < e.qty; i++) {
         list.push({
           id: uid(), name: e.qty > 1 ? `${e.name} ${i + 1}` : e.name,
@@ -87,8 +101,8 @@ function InitiativeTracker({ encounter, onEnd }) {
 
   const rowStyle = (isCurrent, isDead) => ({
     display: 'grid',
-    gridTemplateColumns: '28px 1fr 70px 80px 28px',
-    alignItems: 'center', gap: 6,
+    gridTemplateColumns: '56px 1fr 80px 80px 28px',
+    alignItems: 'center', gap: 8,
     padding: '6px 10px', borderRadius: 6, marginBottom: 4,
     background: isCurrent ? 'rgba(201,168,76,0.12)' : 'rgba(255,255,255,0.03)',
     border: `1px solid ${isCurrent ? 'var(--gold)' : 'var(--border)'}`,
@@ -127,8 +141,8 @@ function InitiativeTracker({ encounter, onEnd }) {
       </div>
 
       {/* Column headers */}
-      <div style={{ display: 'grid', gridTemplateColumns: '28px 1fr 70px 80px 28px', gap: 6, padding: '0 10px', marginBottom: 4 }}>
-        {['Init', 'Name', 'HP', 'Max HP', ''].map((h, i) => (
+      <div style={{ display: 'grid', gridTemplateColumns: '56px 1fr 80px 80px 28px', gap: 8, padding: '0 10px', marginBottom: 4 }}>
+        {['Initiative', 'Name', 'Curr HP', 'Max HP', ''].map((h, i) => (
           <div key={i} style={{ fontSize: 9, color: 'var(--muted)', fontFamily: 'sans-serif', textTransform: 'uppercase', letterSpacing: '.05em', textAlign: i === 0 || i >= 2 ? 'center' : 'left' }}>{h}</div>
         ))}
       </div>
@@ -141,13 +155,19 @@ function InitiativeTracker({ encounter, onEnd }) {
         return (
           <div key={c.id} style={rowStyle(isCurrent, isDead)}>
             {/* Initiative */}
-            <input
-              type="number"
-              value={c.initiative}
-              onChange={e => setInit(c.id, e.target.value)}
-              disabled={started}
-              style={{ ...inputSm, color: started ? 'var(--gold)' : '#f5f0e1', fontWeight: 'bold', background: started ? 'transparent' : '#1a1a2e', border: started ? 'none' : '1px solid var(--border2)' }}
-            />
+            {started ? (
+              <div style={{ textAlign: 'center', fontSize: 16, fontWeight: 'bold', color: 'var(--gold)', fontFamily: 'Georgia, serif' }}>
+                {c.initiative}
+              </div>
+            ) : (
+              <input
+                type="number"
+                value={c.initiative === 0 ? '' : c.initiative}
+                onChange={e => setInit(c.id, e.target.value || '0')}
+                placeholder="—"
+                style={{ ...inputSm, fontSize: 14, fontWeight: 'bold', color: c.initiative !== 0 ? '#f5c842' : 'var(--muted)', border: '1px solid var(--border2)' }}
+              />
+            )}
             {/* Name + type badge */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, overflow: 'hidden' }}>
               {isCurrent && <span style={{ fontSize: 10, color: 'var(--gold)', flexShrink: 0 }}>▶</span>}
@@ -172,6 +192,12 @@ function InitiativeTracker({ encounter, onEnd }) {
 
       {combatants.length === 0 && (
         <div style={{ textAlign: 'center', padding: '1rem', color: 'var(--muted)', fontSize: 12, fontStyle: 'italic' }}>No combatants. Add monsters to the encounter above, or add party members below.</div>
+      )}
+
+      {!started && combatants.length > 0 && (
+        <div style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'sans-serif', fontStyle: 'italic', padding: '4px 10px' }}>
+          Click <strong style={{ color: 'var(--gold)' }}>🎲 Roll All</strong> to randomise initiatives, or type values manually — then click <strong style={{ color: 'var(--gold)' }}>▶ Start Combat</strong> to sort and begin.
+        </div>
       )}
 
       {/* Add combatant form */}
@@ -267,6 +293,7 @@ export default function EncounterCalc({
   encounter, partySize, partyLevel,
   onPartySize, onPartyLevel,
   onChangeQty, onRemove, onClear,
+  campaignCharacters,
 }) {
   const [monSearch, setMonSearch] = useState('')
   const [dropOpen,  setDropOpen]  = useState(false)

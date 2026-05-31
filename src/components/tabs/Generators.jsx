@@ -4,7 +4,7 @@ import { generateNames, RACE_TO_NAME_KEY } from '../../data/nameData'
 import {
   SURNAMES, TAVERN_ADJ, TAVERN_NOUN, TAVERN_CREATURE, TAVERN_NAME_SUFFIX,
   NPC_RACES, QUEST_THEMES, GENERATOR_STATS,
-  generateTavernName, generateTownName, generateNPC, generateQuest, pick,
+  generateTavernName, generateTownName, generateNPC, generateQuest, generateLoot, pick,
 } from '../../data/generatorData'
 
 const S = {
@@ -150,8 +150,8 @@ function TownGen() {
 // ── NPC Generator ──────────────────────────────────────────────────────────────
 function NPCGen() {
   const { npcs } = useCampaign()
-  const [result, setResult]   = useState(null)
-  const [saved, setSaved]     = useState(false)
+  const [result, setResult] = useState(null)
+  const [saved, setSaved]   = useState(false)
 
   function generate() { setResult(generateNPC()); setSaved(false) }
 
@@ -161,6 +161,8 @@ function NPCGen() {
     setSaved(true)
   }
 
+  const inputStyle = { background:'#1a1a2e', border:'1px solid var(--border2)', borderRadius:4, color:'#f5f0e1', fontFamily:'Georgia,serif', fontSize:12, padding:'5px 8px', outline:'none', width:'100%' }
+
   return (
     <div style={S.card}>
       <div style={S.title}>👥 NPC Generator</div>
@@ -169,21 +171,36 @@ function NPCGen() {
 
       {result && (
         <div style={{ marginTop:10, background:'rgba(255,255,255,.03)', border:'1px solid rgba(201,168,76,.2)', borderRadius:8, padding:'1rem' }}>
-          <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:8, marginBottom:10 }}>
+          <div style={{ fontSize:9, color:'var(--muted)', fontFamily:'sans-serif', textTransform:'uppercase', letterSpacing:'.05em', marginBottom:8 }}>Edit before saving</div>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:8 }}>
             <div>
-              <div style={{ fontSize:18, fontWeight:'bold', color:'var(--gold)' }}>{result.name}</div>
-              <div style={{ fontSize:12, color:'var(--parch2)', marginTop:2 }}>{result.race} · {result.role}</div>
+              <div style={{ fontSize:9, color:'var(--muted)', fontFamily:'sans-serif', marginBottom:3 }}>NAME</div>
+              <input style={inputStyle} value={result.name} onChange={e => setResult(r => ({...r, name: e.target.value}))} />
             </div>
+            <div>
+              <div style={{ fontSize:9, color:'var(--muted)', fontFamily:'sans-serif', marginBottom:3 }}>RACE · ROLE</div>
+              <div style={{ display:'flex', gap:6 }}>
+                <input style={{...inputStyle, flex:1}} value={result.race} onChange={e => setResult(r => ({...r, race: e.target.value}))} />
+                <input style={{...inputStyle, flex:1}} value={result.role} onChange={e => setResult(r => ({...r, role: e.target.value}))} />
+              </div>
+            </div>
+          </div>
+          <div style={{ marginBottom:8 }}>
+            <div style={{ fontSize:9, color:'var(--muted)', fontFamily:'sans-serif', marginBottom:3 }}>NOTES</div>
+            <textarea
+              style={{ ...inputStyle, resize:'vertical', minHeight:80, lineHeight:1.6 }}
+              value={result.notes}
+              onChange={e => setResult(r => ({...r, notes: e.target.value}))}
+            />
+          </div>
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:8 }}>
+            <span style={{ ...S.chip }}>{result.disposition}</span>
             <div style={{ display:'flex', gap:6 }}>
               <CopyButton text={`${result.name}\n${result.race} ${result.role}\n${result.notes}`} />
               <button style={{ ...S.btnGold, fontSize:11, padding:'4px 10px' }} onClick={saveToManager} disabled={saved}>
                 {saved ? '✓ Saved' : '+ Add to Campaign'}
               </button>
             </div>
-          </div>
-          <div style={{ fontSize:12, color:'var(--parch2)', lineHeight:1.7 }}>{result.notes}</div>
-          <div style={{ marginTop:8 }}>
-            <span style={{ ...S.chip, marginRight:4 }}>{result.disposition}</span>
           </div>
         </div>
       )}
@@ -227,11 +244,41 @@ function QuestGen() {
 
       {result && (
         <div style={{ marginTop:8, background:'rgba(255,255,255,.03)', border:'1px solid rgba(201,168,76,.2)', borderRadius:8, padding:'1rem' }}>
-          <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:8, marginBottom:8 }}>
+          <div style={{ fontSize:9, color:'var(--muted)', fontFamily:'sans-serif', textTransform:'uppercase', letterSpacing:'.05em', marginBottom:8 }}>Edit before saving</div>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:8 }}>
             <div>
-              <div style={{ fontSize:15, fontWeight:'bold', color:'var(--gold)' }}>{result.name}</div>
-              <div style={{ fontSize:11, color:'var(--muted)', marginTop:2 }}>from {result.giver} · Reward: {result.reward}</div>
+              <div style={{ fontSize:9, color:'var(--muted)', fontFamily:'sans-serif', marginBottom:3 }}>TITLE</div>
+              <input style={{ background:'#1a1a2e', border:'1px solid var(--border2)', borderRadius:4, color:'#f5f0e1', fontFamily:'Georgia,serif', fontSize:12, padding:'5px 8px', outline:'none', width:'100%' }}
+                value={result.name} onChange={e => setResult(r => ({...r, name: e.target.value}))} />
             </div>
+            <div>
+              <div style={{ fontSize:9, color:'var(--muted)', fontFamily:'sans-serif', marginBottom:3 }}>GIVEN BY</div>
+              <input style={{ background:'#1a1a2e', border:'1px solid var(--border2)', borderRadius:4, color:'#f5f0e1', fontFamily:'Georgia,serif', fontSize:12, padding:'5px 8px', outline:'none', width:'100%' }}
+                value={result.giver} onChange={e => setResult(r => ({...r, giver: e.target.value}))} />
+            </div>
+            <div>
+              <div style={{ fontSize:9, color:'var(--muted)', fontFamily:'sans-serif', marginBottom:3 }}>REWARD</div>
+              <input style={{ background:'#1a1a2e', border:'1px solid var(--border2)', borderRadius:4, color:'#f5f0e1', fontFamily:'Georgia,serif', fontSize:12, padding:'5px 8px', outline:'none', width:'100%' }}
+                value={result.reward} onChange={e => setResult(r => ({...r, reward: e.target.value}))} />
+            </div>
+            <div>
+              <div style={{ fontSize:9, color:'var(--muted)', fontFamily:'sans-serif', marginBottom:3 }}>PRIORITY</div>
+              <select style={{ background:'#16213e', border:'1px solid var(--border2)', borderRadius:4, color:'#f5f0e1', fontFamily:'Georgia,serif', fontSize:12, padding:'5px 8px', outline:'none', cursor:'pointer', width:'100%' }}
+                value={result.priority} onChange={e => setResult(r => ({...r, priority: e.target.value}))}>
+                {['Critical','High','Medium','Low'].map(p => <option key={p} value={p} style={{background:'#16213e'}}>{p}</option>)}
+              </select>
+            </div>
+          </div>
+          <div style={{ marginBottom:8 }}>
+            <div style={{ fontSize:9, color:'var(--muted)', fontFamily:'sans-serif', marginBottom:3 }}>HOOK / DESCRIPTION</div>
+            <textarea
+              style={{ background:'#1a1a2e', border:'1px solid var(--border2)', borderRadius:4, color:'#f5f0e1', fontFamily:'Georgia,serif', fontSize:12, padding:'5px 8px', outline:'none', width:'100%', resize:'vertical', minHeight:90, lineHeight:1.6 }}
+              value={result.notes}
+              onChange={e => setResult(r => ({...r, notes: e.target.value}))}
+            />
+          </div>
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:8 }}>
+            <span style={S.chip}>{result.priority} Priority</span>
             <div style={{ display:'flex', gap:6 }}>
               <CopyButton text={`${result.name}\nFrom: ${result.giver}\nReward: ${result.reward}\n\n${result.notes}`} />
               <button style={{ ...S.btnGold, fontSize:11, padding:'4px 10px' }} onClick={saveToManager} disabled={saved}>
@@ -239,12 +286,87 @@ function QuestGen() {
               </button>
             </div>
           </div>
-          <div style={{ fontSize:12, color:'var(--parch2)', lineHeight:1.7 }}>{result.notes}</div>
-          <div style={{ marginTop:8, display:'flex', gap:4 }}>
-            <span style={S.chip}>{result.priority} Priority</span>
-          </div>
         </div>
       )}
+    </div>
+  )
+}
+
+// ── Loot Generator ────────────────────────────────────────────────────────────
+const RARITIES = ['any','Common','Uncommon','Rare','Very Rare','Legendary','Artifact']
+const rarityColors = { Common:'#888', Uncommon:'#90c870', Rare:'#90b8f8', 'Very Rare':'#d090f8', Legendary:'#f5c842', Artifact:'#ff9999' }
+
+function LootGen() {
+  const { loot } = useCampaign()
+  const [rarity, setRarity]  = useState('any')
+  const [results, setResults] = useState([])
+  const [saved, setSaved]     = useState({})
+
+  function generate() {
+    setResults(Array.from({ length: 6 }, () => generateLoot(rarity)))
+    setSaved({})
+  }
+
+  function saveItem(item, idx) {
+    loot.add(item)
+    setSaved(s => ({ ...s, [idx]: true }))
+  }
+
+  const inputStyle = { background:'#1a1a2e', border:'1px solid var(--border2)', borderRadius:4, color:'#f5f0e1', fontFamily:'Georgia,serif', fontSize:12, padding:'4px 8px', outline:'none', width:'100%' }
+
+  return (
+    <div style={S.card}>
+      <div style={S.title}>💰 Loot Generator</div>
+      <div style={S.sub}>Weapons, armor, magic items, and potions — with rarity, weight, gold value, and flavour descriptions.</div>
+      <div style={{ display:'grid', gridTemplateColumns:'1fr auto', gap:8, alignItems:'flex-end', marginBottom:8 }}>
+        <div>
+          <div style={{ fontSize:10, color:'var(--muted)', fontFamily:'sans-serif', textTransform:'uppercase', letterSpacing:'.05em', marginBottom:3 }}>Rarity Filter</div>
+          <select value={rarity} onChange={e => setRarity(e.target.value)} style={{ background:'#16213e', border:'1px solid var(--border2)', borderRadius:5, color:'#f5f0e1', fontFamily:'Georgia,serif', fontSize:12, padding:'6px 8px', outline:'none', cursor:'pointer', width:'100%' }}>
+            {RARITIES.map(r => <option key={r} value={r} style={{background:'#16213e'}}>{r === 'any' ? 'Any Rarity' : r}</option>)}
+          </select>
+        </div>
+        <button style={S.btn} onClick={generate}>🎲 Generate</button>
+      </div>
+
+      {results.map((item, idx) => {
+        const color = rarityColors[item.rarity] || '#888'
+        return (
+          <div key={idx} style={{ background:'rgba(255,255,255,.03)', border:`1px solid ${color}44`, borderLeft:`3px solid ${color}`, borderRadius:6, padding:'8px 10px', marginTop:6 }}>
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:6, marginBottom:6 }}>
+              <div>
+                <div style={{ fontSize:9, color:'var(--muted)', fontFamily:'sans-serif', marginBottom:2 }}>NAME</div>
+                <input style={inputStyle} value={item.name} onChange={e => setResults(rs => rs.map((r,i) => i===idx ? {...r, name:e.target.value} : r))} />
+              </div>
+              <div style={{ display:'flex', gap:6 }}>
+                <div style={{ flex:1 }}>
+                  <div style={{ fontSize:9, color:'var(--muted)', fontFamily:'sans-serif', marginBottom:2 }}>WEIGHT (lb)</div>
+                  <input style={inputStyle} type="number" min="0" step="0.1" value={item.weight} onChange={e => setResults(rs => rs.map((r,i) => i===idx ? {...r, weight:e.target.value} : r))} />
+                </div>
+                <div style={{ flex:1 }}>
+                  <div style={{ fontSize:9, color:'var(--muted)', fontFamily:'sans-serif', marginBottom:2 }}>VALUE (gp)</div>
+                  <input style={inputStyle} type="number" min="0" value={item.goldValue} onChange={e => setResults(rs => rs.map((r,i) => i===idx ? {...r, goldValue:e.target.value} : r))} />
+                </div>
+              </div>
+            </div>
+            <div style={{ marginBottom:6 }}>
+              <div style={{ fontSize:9, color:'var(--muted)', fontFamily:'sans-serif', marginBottom:2 }}>DESCRIPTION</div>
+              <input style={inputStyle} value={item.notes} onChange={e => setResults(rs => rs.map((r,i) => i===idx ? {...r, notes:e.target.value} : r))} />
+            </div>
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:6 }}>
+              <div style={{ display:'flex', gap:4 }}>
+                <span style={{ fontSize:10, fontFamily:'sans-serif', padding:'1px 7px', borderRadius:10, background:`${color}22`, border:`1px solid ${color}55`, color }}>{item.rarity}</span>
+                <span style={{ fontSize:10, fontFamily:'sans-serif', padding:'1px 7px', borderRadius:10, background:'rgba(255,255,255,.06)', border:'1px solid var(--border)', color:'var(--muted)' }}>{item.type}</span>
+              </div>
+              <div style={{ display:'flex', gap:4 }}>
+                <CopyButton text={`${item.name} (${item.rarity} ${item.type})\nWeight: ${item.weight} lb | Value: ${item.goldValue} gp\n${item.notes}`} />
+                <button style={{ ...S.btnGold, fontSize:10, padding:'2px 8px' }} onClick={() => saveItem(item, idx)} disabled={saved[idx]}>
+                  {saved[idx] ? '✓ Saved' : '+ Add to Loot'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      })}
     </div>
   )
 }
@@ -267,6 +389,7 @@ export default function Generators() {
           <NameGen />
           <TavernGen />
           <TownGen />
+          <LootGen />
         </div>
         <div>
           <NPCGen />
