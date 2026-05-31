@@ -6,7 +6,7 @@ function uid() { return Date.now().toString(36) + Math.random().toString(36).sli
 function d20() { return Math.floor(Math.random() * 20) + 1 }
 
 // ── Initiative Tracker ────────────────────────────────────────────────────────
-function InitiativeTracker({ encounter, onEnd }) {
+function InitiativeTracker({ encounter, onEnd, campaignCharacters }) {
   // Build initial combatants from encounter (expand qty into individuals) + campaign party
   function buildFromEncounter() {
     const list = []
@@ -502,6 +502,7 @@ export default function EncounterCalc({
           key={trackerKey}
           encounter={encounter}
           onEnd={() => setShowTracker(false)}
+          campaignCharacters={campaignCharacters}
         />
       )}
     </div>
