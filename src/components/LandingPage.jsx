@@ -1,3 +1,77 @@
+import { useState } from 'react'
+
+const FAQ = [
+  {
+    q: 'How do I start tracking a campaign?',
+    a: 'Open the Campaign Manager tab and use the Character Builder to create your party members. Each character saves automatically and appears in the Campaign Manager where you can track HP, conditions, spell slots, XP, and more.',
+  },
+  {
+    q: 'How does the Initiative Tracker work?',
+    a: 'Go to the Encounter Calc tab, add monsters to your encounter, then click "Track Combat." Your active campaign characters are added automatically. Set initiative for each combatant, click "Start Combat," and use the tracker to manage turns, HP, and conditions. Combat state is saved if you switch tabs mid-fight.',
+  },
+  {
+    q: 'Can I run the Encounter Calc from inside the Campaign Manager?',
+    a: 'Yes — open the Campaign Manager, select any campaign, and navigate to the Combat module. It embeds the full Encounter Calculator and Initiative Tracker with your active party pre-loaded.',
+  },
+  {
+    q: 'How do the Generators work?',
+    a: 'Open the Generators tab. Pick a category — names, taverns, towns, NPCs, quests, or loot — and hit Generate. Results are editable inline. NPCs, quests, and loot items can be saved directly to your Campaign Manager with one click.',
+  },
+  {
+    q: 'Will I lose my campaign data if I close the browser?',
+    a: 'No — your data is stored in your browser\'s local storage and persists between sessions. It is tied to this specific browser on this device, so switching browsers or clearing site data will erase it. Use the Export button in the Campaign Manager to back up your data.',
+  },
+  {
+    q: 'Does it work on mobile?',
+    a: 'Yes, the toolkit is fully responsive and works on phones and tablets. The Initiative Tracker and Campaign Manager are especially useful at the table on a tablet.',
+  },
+  {
+    q: 'Which edition of D&D does it support?',
+    a: 'Both the 2014 SRD (5th Edition) and 2024 SRD (5.2 / "One D&D"). Use the edition toggle at the top of the app to switch between them. Spell and monster data updates to match.',
+  },
+]
+
+function Accordion({ items }) {
+  const [open, setOpen] = useState(null)
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {items.map((item, i) => (
+        <div
+          key={i}
+          style={{
+            background: 'rgba(255,255,255,0.03)',
+            border: `1px solid ${open === i ? 'rgba(201,168,76,0.4)' : 'var(--border)'}`,
+            borderRadius: 8,
+            overflow: 'hidden',
+            transition: 'border-color 0.15s',
+          }}
+        >
+          <button
+            onClick={() => setOpen(open === i ? null : i)}
+            style={{
+              width: '100%', textAlign: 'left', background: 'none', border: 'none',
+              padding: '0.9rem 1.1rem', cursor: 'pointer',
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12,
+            }}
+          >
+            <span style={{ fontSize: 14, fontWeight: 'bold', color: 'var(--parch)', lineHeight: 1.4 }}>
+              {item.q}
+            </span>
+            <span style={{ fontSize: 18, color: 'var(--gold)', flexShrink: 0, lineHeight: 1 }}>
+              {open === i ? '−' : '+'}
+            </span>
+          </button>
+          {open === i && (
+            <div style={{ padding: '0 1.1rem 1rem', fontSize: 13, color: 'var(--parch2)', lineHeight: 1.7 }}>
+              {item.a}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  )
+}
+
 export default function LandingPage({ onEnter }) {
   const cardStyle = {
     background: 'rgba(255,255,255,0.04)',
@@ -13,6 +87,15 @@ export default function LandingPage({ onEnter }) {
     letterSpacing: '0.04em',
     marginBottom: '1rem',
   }
+
+  const FreeBadge = () => (
+    <span style={{
+      background: 'rgba(30,100,30,0.3)', color: '#90c870',
+      border: '1px solid rgba(30,100,30,0.5)',
+      borderRadius: 3, fontSize: 9, fontFamily: 'sans-serif',
+      padding: '1px 5px', marginLeft: 6, verticalAlign: 'middle', fontWeight: 'bold',
+    }}>FREE</span>
+  )
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--stone)', padding: '2rem 1.25rem 3rem' }}>
@@ -90,13 +173,7 @@ export default function LandingPage({ onEnter }) {
             <div style={cardStyle}>
               <div style={{ fontSize: 22, marginBottom: 8 }}>📖</div>
               <div style={{ fontSize: 14, fontWeight: 'bold', color: 'var(--gold)', marginBottom: 6 }}>
-                Reference Tools
-                <span style={{
-                  background: 'rgba(30,100,30,0.3)', color: '#90c870',
-                  border: '1px solid rgba(30,100,30,0.5)',
-                  borderRadius: 3, fontSize: 9, fontFamily: 'sans-serif',
-                  padding: '1px 5px', marginLeft: 6, verticalAlign: 'middle', fontWeight: 'bold',
-                }}>FREE</span>
+                Reference Tools<FreeBadge />
               </div>
               <p style={{ fontSize: 13, color: 'var(--parch2)', lineHeight: 1.6, margin: 0 }}>
                 Conditions, Actions, Combat Rules, Saves &amp; DCs, Spells,
@@ -108,59 +185,71 @@ export default function LandingPage({ onEnter }) {
             <div style={cardStyle}>
               <div style={{ fontSize: 22, marginBottom: 8 }}>⚔</div>
               <div style={{ fontSize: 14, fontWeight: 'bold', color: 'var(--gold)', marginBottom: 6 }}>
-                Encounter Calculator
-                <span style={{
-                  background: 'rgba(30,100,30,0.3)', color: '#90c870',
-                  border: '1px solid rgba(30,100,30,0.5)',
-                  borderRadius: 3, fontSize: 9, fontFamily: 'sans-serif',
-                  padding: '1px 5px', marginLeft: 6, verticalAlign: 'middle', fontWeight: 'bold',
-                }}>FREE</span>
+                Encounter Calculator<FreeBadge />
               </div>
               <p style={{ fontSize: 13, color: 'var(--parch2)', lineHeight: 1.6, margin: 0 }}>
                 Build and balance encounters for your party. Add monsters,
                 set party size and level, and get instant XP-based difficulty
-                ratings. Free to use, no account needed.
+                ratings. Launch the Initiative Tracker directly from any encounter.
+              </p>
+            </div>
+
+            <div style={cardStyle}>
+              <div style={{ fontSize: 22, marginBottom: 8 }}>⚡</div>
+              <div style={{ fontSize: 14, fontWeight: 'bold', color: 'var(--gold)', marginBottom: 6 }}>
+                Initiative Tracker<FreeBadge />
+              </div>
+              <p style={{ fontSize: 13, color: 'var(--parch2)', lineHeight: 1.6, margin: 0 }}>
+                Run combat round-by-round with full HP tracking, a built-in dice
+                roller, and turn order management. Your active party populates
+                automatically. Combat state is saved if you switch tabs mid-fight.
               </p>
             </div>
 
             <div style={cardStyle}>
               <div style={{ fontSize: 22, marginBottom: 8 }}>📋</div>
               <div style={{ fontSize: 14, fontWeight: 'bold', color: 'var(--gold)', marginBottom: 6 }}>
-                Campaign Manager
-                <span style={{
-                  background: 'rgba(30,100,30,0.3)', color: '#90c870',
-                  border: '1px solid rgba(30,100,30,0.5)',
-                  borderRadius: 3, fontSize: 9, fontFamily: 'sans-serif',
-                  padding: '1px 5px', marginLeft: 6, verticalAlign: 'middle', fontWeight: 'bold',
-                }}>FREE</span>
+                Campaign Manager<FreeBadge />
               </div>
               <p style={{ fontSize: 13, color: 'var(--parch2)', lineHeight: 1.6, margin: 0 }}>
                 Track your entire campaign — characters, sessions, encounters,
-                loot, NPCs, and quests. Expand any character card to see a full
-                DM reference view with saving throws, skills, spell slots, and
-                more. All stored locally in your browser.
+                loot, NPCs, and quests. Full DM panel per character with spell
+                slots, conditions, death saves, and a per-character journal.
               </p>
             </div>
 
             <div style={cardStyle}>
               <div style={{ fontSize: 22, marginBottom: 8 }}>🧙</div>
               <div style={{ fontSize: 14, fontWeight: 'bold', color: 'var(--gold)', marginBottom: 6 }}>
-                Character Builder
-                <span style={{
-                  background: 'rgba(30,100,30,0.3)', color: '#90c870',
-                  border: '1px solid rgba(30,100,30,0.5)',
-                  borderRadius: 3, fontSize: 9, fontFamily: 'sans-serif',
-                  padding: '1px 5px', marginLeft: 6, verticalAlign: 'middle', fontWeight: 'bold',
-                }}>FREE</span>
+                Character Builder<FreeBadge />
               </div>
               <p style={{ fontSize: 13, color: 'var(--parch2)', lineHeight: 1.6, margin: 0 }}>
                 Build a full 5e character in 10 guided steps — race, class,
                 background, ability scores (Standard Array, Point Buy, or Manual),
-                skills, spells, equipment, and appearance. Saves directly to the
-                Campaign Manager, with print-to-PDF export.
+                skills, spells, equipment, and appearance. Print-to-PDF export included.
+              </p>
+            </div>
+
+            <div style={cardStyle}>
+              <div style={{ fontSize: 22, marginBottom: 8 }}>🎲</div>
+              <div style={{ fontSize: 14, fontWeight: 'bold', color: 'var(--gold)', marginBottom: 6 }}>
+                Generators<FreeBadge />
+              </div>
+              <p style={{ fontSize: 13, color: 'var(--parch2)', lineHeight: 1.6, margin: 0 }}>
+                Instantly generate names (60,000+ combos), tavern names, towns,
+                detailed NPCs, quest hooks, and loot. Results are editable and
+                can be saved directly to your campaign with one click.
               </p>
             </div>
           </div>
+        </div>
+
+        {/* ── How To ── */}
+        <div style={{ marginBottom: '2rem' }}>
+          <div style={{ ...sectionTitle, borderBottom: '1px solid var(--border)', paddingBottom: 8 }}>
+            How to use it
+          </div>
+          <Accordion items={FAQ} />
         </div>
 
         {/* ── Storage Notice ── */}
@@ -183,7 +272,7 @@ export default function LandingPage({ onEnter }) {
               The Campaign Manager saves your data directly in this browser using local storage.
               This means your data stays private and works offline — but it is tied to this browser
               on this device. Clearing your browser data or switching browsers will erase your
-              campaign. We recommend exporting important notes elsewhere for safekeeping.
+              campaign. Use the Export button in the Campaign Manager to back up your data.
             </p>
           </div>
         </div>
