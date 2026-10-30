@@ -81,6 +81,39 @@ export function getSpellSlots(className, level) {
   return null
 }
 
+// How many "caster levels" a class contributes to the multiclass spell slot table.
+// Full casters = 1:1, half casters = ½ (rounded down), pact/non = 0.
+function casterContribution(className, levels) {
+  if (!className || levels <= 0) return 0
+  if (['Bard','Cleric','Druid','Sorcerer','Wizard'].includes(className)) return levels
+  if (['Paladin','Ranger'].includes(className)) return Math.floor(levels / 2)
+  return 0  // Warlock (pact magic) and non-casters don't add to the table
+}
+
+// Returns the combined multiclass spell slot array [L1…L9], or null if neither class casts.
+// Warlock pact slots are returned separately via getSpellSlots.
+export function getMulticlassSpellSlots(class1, lvl1, class2, lvl2) {
+  const combined = casterContribution(class1, lvl1) + casterContribution(class2, lvl2)
+  if (combined === 0) return null
+  return FULL_CASTER_SLOTS[Math.min(combined, 20)] || null
+}
+
+// Multiclassing ability score prerequisites (PHB p.163)
+export const MULTICLASS_PREREQS = {
+  Barbarian: { str: 13 },
+  Bard:      { cha: 13 },
+  Cleric:    { wis: 13 },
+  Druid:     { wis: 13 },
+  Fighter:   { str: 13, dex: 13 }, // either one
+  Monk:      { dex: 13, wis: 13 },
+  Paladin:   { str: 13, cha: 13 },
+  Ranger:    { dex: 13, wis: 13 },
+  Rogue:     { dex: 13 },
+  Sorcerer:  { cha: 13 },
+  Warlock:   { cha: 13 },
+  Wizard:    { int: 13 },
+}
+
 // ── Skills ────────────────────────────────────────────────────────────────────
 export const SKILLS = [
   { name: 'Acrobatics',      ability: 'dex' },

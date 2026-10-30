@@ -6,7 +6,7 @@ import {
   RACES, CLASSES, BACKGROUNDS, SKILLS, ABILITIES, ABILITY_LABELS, ABILITY_SHORT,
   ALIGNMENTS, STANDARD_ARRAY, POINT_BUY_COSTS, POINT_BUY_BUDGET,
   POINT_BUY_MIN, POINT_BUY_MAX, PROF_BONUS, LANGUAGES, TOOLS,
-  abilityMod, modStr, getSpellSlots, XP_LEVELS,
+  abilityMod, modStr, getSpellSlots, getMulticlassSpellSlots, MULTICLASS_PREREQS, XP_LEVELS,
 } from '../../data/characterData'
 import {
   getClassSpellList, getCantripsKnown, getSpellsKnownCount,
@@ -32,6 +32,7 @@ const BLANK_CHAR = {
   name:'', playerName:'', level:1, xp:0, alignment:'True Neutral',
   race:'', subrace:'', dragonAncestry:'',
   class:'', subclass:'',
+  class2:'', subclass2:'', level2:0,
   background:'',
   str:10, dex:10, con:10, int:10, wis:10, cha:10,
   scoreMethod:'standard', scoresConfirmed:false,
@@ -290,15 +291,84 @@ function StepRace({ char, setChar }) {
 }
 
 // ── Step 3: Class ─────────────────────────────────────────────────────────────
+function ClassCard({ classObj }) {
+  if (!classObj) return null
+  return (
+    <div style={{ ...S.card, marginBottom:12 }}>
+      <div style={S.sectionTitle}>{classObj.name}</div>
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:6, fontSize:12, fontFamily:'sans-serif', marginBottom:10 }}>
+        <div><span style={{ color:'var(--muted)' }}>Hit Die:</span> <strong>d{classObj.hitDie}</strong></div>
+        <div><span style={{ color:'var(--muted)' }}>Primary:</span> <strong>{ABILITY_LABELS[classObj.primaryAbility]}</strong></div>
+        <div><span style={{ color:'var(--muted)' }}>Saves:</span> <strong>{classObj.savingThrows.map(s=>ABILITY_SHORT[s]).join(', ')}</strong></div>
+        <div><span style={{ color:'var(--muted)' }}>Spellcasting:</span> <strong style={{ color: classObj.spellcasting ? '#90b8f8' : 'var(--muted)' }}>{classObj.spellcasting ? `${classObj.spellcastingAbility?.toUpperCase()} (${classObj.spellcasting})` : 'None'}</strong></div>
+        <div style={{ gridColumn:'1/-1' }}><span style={{ color:'var(--muted)' }}>Armor:</span> <strong>{classObj.armorProfs.join(', ') || 'None'}</strong></div>
+        <div style={{ gridColumn:'1/-1' }}><span style={{ color:'var(--muted)' }}>Weapons:</span> <strong>{classObj.weaponProfs.join(', ')}</strong></div>
+      </div>
+      <div style={{ fontSize:12, color:'var(--parch2)' }}>
+        <strong style={{ color:'var(--gold)' }}>Skills:</strong> Choose {classObj.skillCount} from {classObj.skillChoices === 'any' ? 'any skills' : classObj.skillChoices.join(', ')}
+      </div>
+      {classObj.features[1] && (
+        <div style={{ fontSize:12, color:'var(--parch2)', marginTop:6 }}>
+          <strong style={{ color:'var(--gold)' }}>Level 1 Features:</strong> {classObj.features[1].join(', ')}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function StepClass({ char, setChar }) {
-  const classObj = CLASSES.find(c => c.name === char.class)
-  const showSubclass = classObj && char.level >= classObj.subclassLevel
+  const classObj  = CLASSES.find(c => c.name === char.class)
+  const class2Obj = CLASSES.find(c => c.name === char.class2)
+  const totalLevel = char.level
+  const level1 = totalLevel - (char.level2 || 0)
+  const showSubclass  = classObj  && level1 >= classObj.subclassLevel
+  const showSubclass2 = class2Obj && (char.level2 || 0) >= class2Obj.subclassLevel
+  const isMulticlassing = !!char.class2
+
+  // Prereq check for the second class
+  function getPrereqWarning(className) {
+    const prereqs = MULTICLASS_PREREQS[className]
+    if (!prereqs) return null
+    const entries = Object.entries(prereqs)
+    // Fighter has str OR dex 13; handle that: if any single ability satisfies, pass
+    if (className === 'Fighter') {
+      if (char.str >= 13 || char.dex >= 13) return null
+      return 'Requires STR 13 or DEX 13'
+    }
+    const missing = entries.filter(([ab, min]) => (char[ab] || 10) < min)
+    if (missing.length === 0) return null
+    return `Requires ${missing.map(([ab,min])=>`${ABILITY_SHORT[ab]} ${min}+`).join(', ')}`
+  }
+
+  function setLevel2(val) {
+    const v = Math.max(1, Math.min(totalLevel - 1, parseInt(val) || 1))
+    setChar(c => ({ ...c, level2: v }))
+  }
+
+  function enableMulticlass() {
+    const firstOther = CLASSES.find(c => c.name !== char.class)
+    setChar(c => ({ ...c, class2: firstOther?.name || '', subclass2: '', level2: 1,
+      spellcastingAbility: c.spellcastingAbility || firstOther?.spellcastingAbility || '' }))
+  }
+
+  function disableMulticlass() {
+    setChar(c => ({ ...c, class2: '', subclass2: '', level2: 0 }))
+  }
 
   return (
     <div>
+      {/* Primary class picker */}
+      <div style={{ fontSize:11, color:'var(--gold)', fontFamily:'sans-serif', textTransform:'uppercase', letterSpacing:'.07em', marginBottom:8 }}>Primary Class</div>
       <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(110px,1fr))', gap:8, marginBottom:16 }}>
         {CLASSES.map(cl => (
-          <button key={cl.name} onClick={() => setChar(c=>({...c, class:cl.name, subclass:'', spellcastingAbility: cl.spellcastingAbility||'' }))} style={{
+          <button key={cl.name} onClick={() => setChar(c=>({
+            ...c, class:cl.name, subclass:'',
+            spellcastingAbility: cl.spellcastingAbility || '',
+            // Don't allow same class for both
+            class2: c.class2 === cl.name ? '' : c.class2,
+            subclass2: c.class2 === cl.name ? '' : c.subclass2,
+            level2: c.class2 === cl.name ? 0 : c.level2,
+          }))} style={{
             background: char.class===cl.name ? 'rgba(201,168,76,.15)' : 'rgba(255,255,255,.03)',
             border: char.class===cl.name ? '2px solid var(--gold)' : '1px solid var(--border)',
             borderRadius:8, padding:'8px 6px', cursor:'pointer', textAlign:'center',
@@ -310,30 +380,10 @@ function StepClass({ char, setChar }) {
         ))}
       </div>
 
-      {classObj && (
-        <div style={{ ...S.card, marginBottom:12 }}>
-          <div style={S.sectionTitle}>{classObj.name}</div>
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:6, fontSize:12, fontFamily:'sans-serif', marginBottom:10 }}>
-            <div><span style={{ color:'var(--muted)' }}>Hit Die:</span> <strong>d{classObj.hitDie}</strong></div>
-            <div><span style={{ color:'var(--muted)' }}>Primary:</span> <strong>{ABILITY_LABELS[classObj.primaryAbility]}</strong></div>
-            <div><span style={{ color:'var(--muted)' }}>Saves:</span> <strong>{classObj.savingThrows.map(s=>ABILITY_SHORT[s]).join(', ')}</strong></div>
-            <div><span style={{ color:'var(--muted)' }}>Spellcasting:</span> <strong style={{ color: classObj.spellcasting ? '#90b8f8' : 'var(--muted)' }}>{classObj.spellcasting ? `${classObj.spellcastingAbility?.toUpperCase()} (${classObj.spellcasting})` : 'None'}</strong></div>
-            <div style={{ gridColumn:'1/-1' }}><span style={{ color:'var(--muted)' }}>Armor:</span> <strong>{classObj.armorProfs.join(', ') || 'None'}</strong></div>
-            <div style={{ gridColumn:'1/-1' }}><span style={{ color:'var(--muted)' }}>Weapons:</span> <strong>{classObj.weaponProfs.join(', ')}</strong></div>
-          </div>
-          <div style={{ fontSize:12, color:'var(--parch2)' }}>
-            <strong style={{ color:'var(--gold)' }}>Skills:</strong> Choose {classObj.skillCount} from {classObj.skillChoices === 'any' ? 'any skills' : classObj.skillChoices.join(', ')}
-          </div>
-          {classObj.features[1] && (
-            <div style={{ fontSize:12, color:'var(--parch2)', marginTop:6 }}>
-              <strong style={{ color:'var(--gold)' }}>Level 1 Features:</strong> {classObj.features[1].join(', ')}
-            </div>
-          )}
-        </div>
-      )}
+      <ClassCard classObj={classObj} />
 
       {showSubclass && (
-        <div>
+        <div style={{ marginBottom:12 }}>
           <label style={S.label}>{classObj.subclassLabel}</label>
           <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
             {classObj.subclasses.map(sc => (
@@ -346,12 +396,98 @@ function StepClass({ char, setChar }) {
               }}>{sc}</button>
             ))}
           </div>
-          {!char.subclass && <div style={{ fontSize:11, color:'var(--muted)', marginTop:6, fontStyle:'italic' }}>Select your {classObj.subclassLabel} (available at level {classObj.subclassLevel})</div>}
+          {!char.subclass && <div style={{ fontSize:11, color:'var(--muted)', marginTop:6, fontStyle:'italic' }}>Select your {classObj.subclassLabel}</div>}
         </div>
       )}
       {classObj && !showSubclass && (
-        <div style={{ fontSize:12, color:'var(--muted)', fontStyle:'italic', marginTop:8 }}>
+        <div style={{ fontSize:12, color:'var(--muted)', fontStyle:'italic', marginBottom:12 }}>
           {classObj.subclassLabel} unlocks at level {classObj.subclassLevel}.
+        </div>
+      )}
+
+      {/* ── Multiclass toggle ── */}
+      {char.class && (
+        <div style={{ borderTop:'1px solid var(--border)', paddingTop:16, marginTop:4 }}>
+          {!isMulticlassing ? (
+            <button style={{ ...S.btnGhost, borderColor:'rgba(144,184,248,.4)', color:'#90b8f8' }} onClick={enableMulticlass}>
+              + Add Multiclass
+            </button>
+          ) : (
+            <div>
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 }}>
+                <div style={{ fontSize:11, color:'#90b8f8', fontFamily:'sans-serif', textTransform:'uppercase', letterSpacing:'.07em' }}>Second Class (Multiclass)</div>
+                <button style={{ ...S.btnGhost, fontSize:11, padding:'3px 10px' }} onClick={disableMulticlass}>Remove</button>
+              </div>
+
+              {/* Level split */}
+              <div style={{ ...S.card, marginBottom:12, background:'rgba(144,184,248,.06)', borderColor:'rgba(144,184,248,.25)' }}>
+                <div style={{ fontSize:12, fontFamily:'sans-serif', color:'var(--parch2)', marginBottom:8 }}>
+                  Level split (total: <strong style={{ color:'var(--gold)' }}>{totalLevel}</strong>)
+                </div>
+                <div style={{ display:'grid', gridTemplateColumns:'1fr auto 1fr', gap:8, alignItems:'center', fontSize:13 }}>
+                  <div style={{ textAlign:'center' }}>
+                    <div style={{ fontWeight:'bold', color:'var(--gold)', fontSize:22 }}>{Math.max(1, level1)}</div>
+                    <div style={{ fontSize:11, color:'var(--muted)', fontFamily:'sans-serif' }}>{char.class || '—'} levels</div>
+                  </div>
+                  <div style={{ color:'var(--muted)', fontSize:16 }}>/</div>
+                  <div style={{ textAlign:'center' }}>
+                    <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
+                      <button style={{ ...S.btnGhost, padding:'2px 8px', fontSize:16 }} disabled={(char.level2||0) <= 1} onClick={() => setLevel2((char.level2||1)-1)}>−</button>
+                      <span style={{ fontWeight:'bold', color:'#90b8f8', fontSize:22, minWidth:28, textAlign:'center' }}>{char.level2||1}</span>
+                      <button style={{ ...S.btnGhost, padding:'2px 8px', fontSize:16 }} disabled={(char.level2||0) >= totalLevel-1} onClick={() => setLevel2((char.level2||1)+1)}>+</button>
+                    </div>
+                    <div style={{ fontSize:11, color:'var(--muted)', fontFamily:'sans-serif' }}>{char.class2 || '—'} levels</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Second class picker */}
+              <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(110px,1fr))', gap:8, marginBottom:16 }}>
+                {CLASSES.filter(cl => cl.name !== char.class).map(cl => {
+                  const warn = getPrereqWarning(cl.name)
+                  return (
+                    <button key={cl.name} onClick={() => setChar(c=>({...c, class2:cl.name, subclass2:'',
+                      spellcastingAbility: c.spellcastingAbility || cl.spellcastingAbility || '' }))} style={{
+                      background: char.class2===cl.name ? 'rgba(144,184,248,.12)' : 'rgba(255,255,255,.03)',
+                      border: char.class2===cl.name ? '2px solid #90b8f8' : '1px solid var(--border)',
+                      borderRadius:8, padding:'8px 6px', cursor:'pointer', textAlign:'center',
+                      color: char.class2===cl.name ? '#90b8f8' : 'var(--parch2)',
+                      fontFamily:'Georgia,serif', fontSize:12,
+                      opacity: warn && char.class2!==cl.name ? 0.6 : 1,
+                    }}>
+                      {cl.name}
+                      {warn && <div style={{ fontSize:9, color:'#f5c842', marginTop:2, fontFamily:'sans-serif', lineHeight:1.2 }}>⚠</div>}
+                    </button>
+                  )
+                })}
+              </div>
+
+              {class2Obj && getPrereqWarning(class2Obj.name) && (
+                <div style={{ fontSize:12, color:'#f5c842', fontFamily:'sans-serif', marginBottom:8, padding:'6px 10px', background:'rgba(245,200,66,.08)', borderRadius:5, border:'1px solid rgba(245,200,66,.25)' }}>
+                  ⚠ {getPrereqWarning(class2Obj.name)} — your DM may waive this requirement.
+                </div>
+              )}
+
+              <ClassCard classObj={class2Obj} />
+
+              {showSubclass2 && class2Obj && (
+                <div style={{ marginBottom:12 }}>
+                  <label style={S.label}>{class2Obj.subclassLabel} (2nd class)</label>
+                  <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+                    {class2Obj.subclasses.map(sc => (
+                      <button key={sc} onClick={() => setChar(c=>({...c,subclass2:sc}))} style={{
+                        background: char.subclass2===sc ? 'rgba(144,184,248,.12)' : 'rgba(255,255,255,.03)',
+                        border: char.subclass2===sc ? '1px solid #90b8f8' : '1px solid var(--border)',
+                        borderRadius:6, padding:'6px 12px', cursor:'pointer',
+                        color: char.subclass2===sc ? '#90b8f8' : 'var(--parch2)',
+                        fontFamily:'Georgia,serif', fontSize:12,
+                      }}>{sc}</button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -464,11 +600,23 @@ function StepScores({ char, setChar }) {
   })
 
   function calcHp(con) {
-    const classObj = CLASSES.find(cl => cl.name === char.class)
+    const classObj  = CLASSES.find(cl => cl.name === char.class)
     if (!classObj) return ''
     const conMod = abilityMod(con || 10)
-    const hd = classObj.hitDie
-    return hd + conMod + (char.level - 1) * (Math.floor(hd / 2) + 1 + conMod)
+    const hd1  = classObj.hitDie
+    const lvl2 = char.level2 || 0
+    const lvl1 = Math.max(1, char.level - lvl2)
+    // Primary class: max at level 1, average for remaining levels
+    let hp = hd1 + conMod + (lvl1 - 1) * (Math.floor(hd1 / 2) + 1 + conMod)
+    // Secondary class (if any): average for each level
+    if (lvl2 > 0) {
+      const class2Obj = CLASSES.find(cl => cl.name === char.class2)
+      if (class2Obj) {
+        const hd2 = class2Obj.hitDie
+        hp += lvl2 * (Math.floor(hd2 / 2) + 1 + conMod)
+      }
+    }
+    return hp
   }
 
   function applyScores(base, confirmed = false) {
@@ -860,7 +1008,8 @@ function StepSpells({ char, setChar, version }) {
   const [levelFilter, setLevelFilter] = useState('All')
 
   const classObj  = CLASSES.find(c=>c.name===char.class)
-  const isSpellcaster = !!classObj?.spellcasting
+  const class2Obj = CLASSES.find(c=>c.name===char.class2)
+  const isSpellcaster = !!classObj?.spellcasting || !!class2Obj?.spellcasting
 
   if (!isSpellcaster) {
     return (
@@ -872,10 +1021,28 @@ function StepSpells({ char, setChar, version }) {
   }
 
   const ALL_SPELLS  = version === '2024' ? SPELLS_2024 : SPELLS
-  const classSpells = getClassSpellList(char.class)
+  const lvl2 = char.level2 || 0
+  const lvl1 = Math.max(1, char.level - lvl2)
+
+  // Spell list: union of both classes' spell lists
+  const classSpells1 = getClassSpellList(char.class)
+  const classSpells2 = char.class2 ? getClassSpellList(char.class2) : []
+  const classSpells  = [...new Set([...classSpells1, ...classSpells2])]
+
   const cantripsNeeded = getCantripsKnown(char.class, char.level)
   const spellsNeeded   = getSpellsKnownCount(char.class, char.level, char[classObj?.spellcastingAbility] || 10)
-  const slots = getSpellSlots(char.class, char.level)
+
+  // Multiclass slots: use combined table when both classes cast; otherwise single-class
+  const isMulticasting = char.class2 && (classObj?.spellcasting || class2Obj?.spellcasting)
+  const slots = isMulticasting
+    ? getMulticlassSpellSlots(char.class, lvl1, char.class2, lvl2)
+    : getSpellSlots(char.class, char.level)
+  // Warlock pact magic shown separately if either class is Warlock
+  const warlockSlots = char.class === 'Warlock'
+    ? getSpellSlots('Warlock', lvl1)
+    : char.class2 === 'Warlock'
+    ? getSpellSlots('Warlock', lvl2)
+    : null
 
   const filteredSpells = ALL_SPELLS.filter(s => {
     const [name, lvl] = s
@@ -907,7 +1074,8 @@ function StepSpells({ char, setChar, version }) {
         <div><span style={{ color:'var(--muted)' }}>Spell Attack:</span> <strong>+{(PROF_BONUS[char.level]||2) + abilityMod(char[classObj.spellcastingAbility]||10)}</strong></div>
         <div><span style={{ color:'var(--muted)' }}>Cantrips:</span> <strong style={{ color: char.cantrips.length>=cantripsNeeded?'#90c870':'#f5c842' }}>{char.cantrips.length}/{cantripsNeeded}</strong></div>
         {spellsNeeded && <div><span style={{ color:'var(--muted)' }}>Spells:</span> <strong style={{ color: char.spells.length>=spellsNeeded?'#90c870':'#f5c842' }}>{char.spells.length}/{spellsNeeded}</strong></div>}
-        {slots && !slots.slots && <div style={{ gridColumn:'1/-1' }}><span style={{ color:'var(--muted)' }}>Slots: </span>{slots.map((n,i)=>n>0?<span key={i} style={{ color:'var(--gold)', marginRight:6 }}>{`L${i+1}×${n}`}</span>:null)}</div>}
+        {slots && !slots.slots && <div style={{ gridColumn:'1/-1' }}><span style={{ color:'var(--muted)' }}>{isMulticasting ? 'Combined Slots: ' : 'Slots: '}</span>{slots.map((n,i)=>n>0?<span key={i} style={{ color:'var(--gold)', marginRight:6 }}>{`L${i+1}×${n}`}</span>:null)}</div>}
+        {warlockSlots && <div style={{ gridColumn:'1/-1' }}><span style={{ color:'var(--muted)' }}>Pact Magic: </span><span style={{ color:'#c8a2f8' }}>{warlockSlots.slots}×L{warlockSlots.level} slot{warlockSlots.slots>1?'s':''}</span></div>}
       </div>
 
       <div style={{ display:'flex', gap:8, marginBottom:12, flexWrap:'wrap' }}>
@@ -985,7 +1153,11 @@ function StepReview({ char }) {
         <div>
           <div style={{ fontSize:22, fontWeight:'bold', color:'var(--gold)' }}>{char.name || 'Unnamed Hero'}</div>
           <div style={{ fontSize:13, color:'var(--parch2)', marginTop:2 }}>
-            {[char.alignment, char.subrace||char.race, char.subclass||char.class, `Level ${char.level}`].filter(Boolean).join(' · ')}
+            {[char.alignment, char.subrace||char.race,
+              char.class2
+                ? `${char.subclass||char.class} ${char.level-(char.level2||0)} / ${char.subclass2||char.class2} ${char.level2||0}`
+                : char.subclass||char.class,
+              `Level ${char.level}`].filter(Boolean).join(' · ')}
           </div>
           {char.background && <div style={{ fontSize:12, color:'var(--muted)', marginTop:2 }}>Background: {char.background}</div>}
         </div>
@@ -1044,6 +1216,11 @@ export function printCharacter(char) {
   const spellDC = char.spellcastingAbility
     ? 8 + prof + abilityMod(char[char.spellcastingAbility]||10)
     : null
+  const lvl2 = char.level2 || 0
+  const lvl1 = Math.max(1, char.level - lvl2)
+  const classDisplay = char.class2
+    ? `${char.subclass||char.class} ${lvl1} / ${char.subclass2||char.class2} ${lvl2}`
+    : (char.subclass||char.class)
 
   const html = `<!DOCTYPE html>
 <html>
@@ -1104,7 +1281,7 @@ export function printCharacter(char) {
 <div class="sheet-header">
   <div>
     <div class="char-name">${char.name || 'Unnamed Hero'}</div>
-    <div class="char-sub">${[char.subrace||char.race, char.subclass||char.class, char.background].filter(Boolean).join(' · ')}</div>
+    <div class="char-sub">${[char.subrace||char.race, classDisplay, char.background].filter(Boolean).join(' · ')}</div>
   </div>
   <div class="char-meta">
     ${char.playerName ? `Player: <strong>${char.playerName}</strong><br>` : ''}
